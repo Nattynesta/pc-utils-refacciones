@@ -1,75 +1,98 @@
-{{define "title"}}Buscar — RefacCel{{end}}
+{{define "title"}}{{if .Query}}"{{.Query}}" — {{end}}Buscar — RefacCel{{end}}
 {{define "content"}}
-<div class="row mb-4">
+<div class="row g-4">
     <div class="col-md-3">
-        <div class="card shadow-sm">
-            <div class="card-header bg-primary text-white"><i class="bi bi-funnel"></i> Filtros</div>
-            <div class="card-body">
-                <form action="/buscar" method="GET">
-                    <input type="hidden" name="q" value="{{.Query}}">
-                    <div class="mb-3">
-                        <label class="form-label">Categoría</label>
-                        <select name="categoria" class="form-select" onchange="this.form.submit()">
-                            <option value="">Todas</option>
-                            {{range .Categorias}}<option value="{{.Slug}}" {{if eq $.CategoriaSlug .Slug}}selected{{end}}>{{.Nombre}}</option>{{end}}
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Marca</label>
-                        <select name="marca" class="form-select" onchange="this.form.submit()">
-                            <option value="">Todas</option>
-                            {{range .Marcas}}<option value="{{.Nombre}}" {{if eq $.MarcaNombre .Nombre}}selected{{end}}>{{.Nombre}}</option>{{end}}
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Precio máximo</label>
-                        <input type="number" name="precio_max" class="form-control" value="{{.PrecioMax}}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Estado</label>
-                        <select name="estado" class="form-select">
-                            <option value="">Todos</option>
-                            <option value="nuevo" {{if eq .Estado "nuevo"}}selected{{end}}>Nuevo</option>
-                            <option value="reacondicionado" {{if eq .Estado "reacondicionado"}}selected{{end}}>Reacondicionado</option>
-                            <option value="usado" {{if eq .Estado "usado"}}selected{{end}}>Usado</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">Filtrar</button>
-                </form>
+        <div class="filter-section">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white fw-semibold"><i class="bi bi-funnel"></i> Filtros</div>
+                <div class="card-body">
+                    <form action="/buscar" method="GET">
+                        <input type="hidden" name="q" value="{{.Query}}">
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Categoría</label>
+                            <select name="categoria" class="form-select form-select-sm rounded-pill" onchange="this.form.submit()">
+                                <option value="">Todas</option>
+                                {{range .Categorias}}<option value="{{.Slug}}" {{if eq $.CategoriaSlug .Slug}}selected{{end}}>{{.Nombre}}</option>{{end}}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Marca</label>
+                            <select name="marca" class="form-select form-select-sm rounded-pill" onchange="this.form.submit()">
+                                <option value="">Todas</option>
+                                {{range .Marcas}}<option value="{{.Nombre}}" {{if eq $.MarcaNombre .Nombre}}selected{{end}}>{{.Nombre}}</option>{{end}}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Precio máx.</label>
+                            <input type="number" name="precio_max" class="form-control form-control-sm rounded-pill" value="{{.PrecioMax}}" placeholder="$">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Estado</label>
+                            <select name="estado" class="form-select form-select-sm rounded-pill">
+                                <option value="">Todos</option>
+                                <option value="nuevo" {{if eq .Estado "nuevo"}}selected{{end}}>Nuevo</option>
+                                <option value="reacondicionado" {{if eq .Estado "reacondicionado"}}selected{{end}}>Reacondicionado</option>
+                                <option value="usado" {{if eq .Estado "usado"}}selected{{end}}>Usado</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 rounded-pill"><i class="bi bi-search"></i> Filtrar</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
     <div class="col-md-9">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="mb-0">{{if .Query}}Resultados para "<strong>{{.Query}}</strong>"{{else}}Todas las piezas{{end}} <small class="text-muted">({{.Total}} resultados)</small></h4>
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <h4 class="mb-0 fw-bold">{{if .Query}}Resultados para "<strong>{{.Query}}</strong>"{{else}}Todas las piezas{{end}} <span class="badge bg-primary rounded-pill">{{.Total}}</span></h4>
+            <div class="d-flex gap-2">
+                <select class="form-select form-select-sm rounded-pill" style="width:auto" onchange="window.location.href=this.value">
+                    <option value="/buscar?q={{.Query}}&categoria={{.CategoriaSlug}}&marca={{.MarcaNombre}}&sort=nuevos">Más recientes</option>
+                    <option value="/buscar?q={{.Query}}&categoria={{.CategoriaSlug}}&marca={{.MarcaNombre}}&sort=precio_asc" {{if eq $.Sort "precio_asc"}}selected{{end}}>Menor precio</option>
+                    <option value="/buscar?q={{.Query}}&categoria={{.CategoriaSlug}}&marca={{.MarcaNombre}}&sort=precio_desc" {{if eq $.Sort "precio_desc"}}selected{{end}}>Mayor precio</option>
+                </select>
+                <a href="/buscar?q={{.Query}}&categoria={{.CategoriaSlug}}&marca={{.MarcaNombre}}&view={{if eq .View "list"}}grid{{else}}list{{end}}" class="btn btn-outline-secondary rounded-pill btn-sm">
+                    <i class="bi bi-{{if eq .View "list"}}grid{{else}}list{{end}}"></i>
+                </a>
+            </div>
         </div>
+
         {{if .Piezas}}
         <div class="row g-3">
             {{range .Piezas}}
             <div class="col-6 col-md-4 col-lg-3">
                 <a href="/pieza/{{.ID}}" class="text-decoration-none">
-                    <div class="card h-100 border-0 shadow-sm">
-                        {{if .ImagenURL}}<img src="{{.ImagenURL}}" class="card-img-top" alt="{{.Nombre}}" style="height:130px;object-fit:contain">{{else}}<div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height:130px"><i class="bi bi-image text-muted" style="font-size:2.5rem"></i></div>{{end}}
-                        <div class="card-body p-2">
-                            <small class="text-muted">{{.CategoriaNombre}}</small>
-                            <h6 class="card-title mb-1">{{.Nombre}}</h6>
-                            <p class="text-success fw-bold mb-1">${{printf "%.2f" .Precio}}</p>
-                            {{if gt .Stock 0}}<small class="text-success"><i class="bi bi-check-circle"></i> En stock</small>{{else}}<small class="text-danger"><i class="bi bi-x-circle"></i> Agotado</small>{{end}}
+                    <div class="card product-card h-100 border-0">
+                        {{if .ImagenURL}}<img src="{{.ImagenURL}}" class="card-img-top" loading="lazy" alt="{{.Nombre}}">{{else}}<div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height:160px"><i class="bi bi-image text-muted" style="font-size:2.5rem"></i></div>{{end}}
+                        <div class="card-body">
+                            <span class="badge badge-cat mb-1">{{.CategoriaNombre}}</span>
+                            <h6 class="card-title">{{.Nombre}}</h6>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="price">${{printf "%.2f" .Precio}}</span>
+                                {{if gt .Stock 0}}<span class="badge bg-success badge-stock"><i class="bi bi-check-circle-fill"></i> {{.Stock}}</span>{{else}}<span class="badge bg-danger badge-stock">Agotado</span>{{end}}
+                            </div>
+                            {{if gt .Stock 0}}
+                            <div class="stock-bar"><div class="stock-bar-fill {{if lt .Stock 5}}bg-danger{{else if lt .Stock 15}}bg-warning{{else}}bg-success{{end}}" style="width:{{if gt .Stock 20}}100{{else}}{{mul .Stock 5}}{{end}}%"></div></div>
+                            {{end}}
                         </div>
                     </div>
                 </a>
             </div>
             {{end}}
         </div>
+
         {{if gt .TotalPages 1}}
         <nav class="mt-4"><ul class="pagination justify-content-center">
-            <li class="page-item {{if eq .Page 1}}disabled{{end}}"><a class="page-link" href="/buscar?q={{.Query}}&categoria={{.CategoriaSlug}}&marca={{.MarcaNombre}}&page={{sub .Page 1}}">Anterior</a></li>
+            <li class="page-item {{if eq .Page 1}}disabled{{end}}"><a class="page-link rounded-start" href="/buscar?q={{.Query}}&categoria={{.CategoriaSlug}}&marca={{.MarcaNombre}}&page={{sub .Page 1}}"><i class="bi bi-chevron-left"></i></a></li>
             {{range $i := seq .TotalPages}}<li class="page-item {{if eq $.Page $i}}active{{end}}"><a class="page-link" href="/buscar?q={{$.Query}}&categoria={{$.CategoriaSlug}}&marca={{$.MarcaNombre}}&page={{$i}}">{{$i}}</a></li>{{end}}
-            <li class="page-item {{if eq .Page .TotalPages}}disabled{{end}}"><a class="page-link" href="/buscar?q={{.Query}}&categoria={{.CategoriaSlug}}&marca={{.MarcaNombre}}&page={{add .Page 1}}">Siguiente</a></li>
+            <li class="page-item {{if eq .Page .TotalPages}}disabled{{end}}"><a class="page-link rounded-end" href="/buscar?q={{.Query}}&categoria={{.CategoriaSlug}}&marca={{.MarcaNombre}}&page={{add .Page 1}}"><i class="bi bi-chevron-right"></i></a></li>
         </ul></nav>
         {{end}}
         {{else}}
-        <div class="text-center py-5"><i class="bi bi-search text-muted" style="font-size:4rem"></i><h5 class="mt-3">No se encontraron piezas</h5><p class="text-muted">Intenta con otros términos de búsqueda</p></div>
+        <div class="text-center py-5 animate-fade-up">
+            <i class="bi bi-search text-muted" style="font-size:4rem"></i>
+            <h5 class="mt-3 fw-bold">No encontramos piezas</h5>
+            <p class="text-muted">Intenta con otros términos o <a href="/buscar" class="text-primary">quita los filtros</a></p>
+        </div>
         {{end}}
     </div>
 </div>

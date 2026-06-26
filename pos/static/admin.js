@@ -1,7 +1,28 @@
-// Admin JS
-// eslint-disable-next-line no-unused-vars
-function eliminarPieza(id){
+function eliminarPieza(id,tok){
     if(!confirm('¿Eliminar esta pieza?')) return;
-    fetch('/admin/piezas/'+id, {method:'DELETE', headers:{'X-CSRF-Token': document.querySelector('[name=_csrf]')?.value || ''}})
-    .then(r=>r.json()).then(d=>{if(d.success) location.reload();else alert(d.error);});
+    fetch('/admin/piezas/'+id,{method:'DELETE',headers:{'X-CSRF-Token':tok}})
+    .then(r=>r.json()).then(d=>{if(d.success) location.reload(); else alert(d.error)});
+}
+function tableFilter(inputId, tableId) {
+    const input = document.getElementById(inputId);
+    if(!input) return;
+    input.addEventListener('keyup', function(){
+        const q = this.value.toLowerCase();
+        document.querySelectorAll('#'+tableId+' tbody tr').forEach(r => {
+            r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+    });
+}
+function exportCSV(tableId, filename) {
+    const rows = document.querySelectorAll('#'+tableId+' tr');
+    let csv = [];
+    rows.forEach(r => {
+        const cols = r.querySelectorAll('td,th');
+        csv.push(Array.from(cols).map(c => '"'+c.textContent.trim().replace(/"/g,'""')+'"').join(','));
+    });
+    const blob = new Blob([csv.join('\n')], {type:'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
 }

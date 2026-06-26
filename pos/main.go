@@ -57,6 +57,8 @@ type PageData struct {
 	AñoLanzamiento int
 	MarcaID    string
 	Compatibilidades []any
+	Telefono   string
+	Negocio    string
 	// Generic data fallback
 	Data       any
 }

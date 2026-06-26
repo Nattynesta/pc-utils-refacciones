@@ -123,7 +123,7 @@ CREATE TABLE IF NOT EXISTS config (
 );
 
 -- Datos iniciales: config
-INSERT OR IGNORE INTO config (clave, valor) VALUES ('negocio_nombre', 'RefacCel'), ('tema', 'light');
+INSERT OR IGNORE INTO config (clave, valor) VALUES ('negocio_nombre', 'RefacCel'), ('tema', 'light'), ('telefono', '');
 
 -- Datos iniciales: categorías
 INSERT OR IGNORE INTO categorias (nombre, slug, icono, descripcion, orden) VALUES

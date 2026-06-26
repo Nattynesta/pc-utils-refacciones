@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -65,7 +66,11 @@ func handlePortalHome(w http.ResponseWriter, r *http.Request) {
 	theme := getConfig("tema")
 	if theme == "" { theme = "light" }
 
-	renderTemplate(w, "portal/home.html", PageData{Title: "RefacCel — Refacciones de Celular", Categorias: cats, Marcas: marcas, Recientes: recientes, Theme: theme})
+	renderTemplate(w, "portal/home.html", PageData{
+		Title: "RefacCel — Refacciones de Celular",
+		Categorias: cats, Marcas: marcas, Recientes: recientes, Theme: theme,
+		Telefono: getConfig("telefono"), Negocio: getConfig("negocio_nombre"),
+	})
 }
 
 func handlePortalBuscar(w http.ResponseWriter, r *http.Request) {
@@ -131,6 +136,7 @@ func handlePortalBuscar(w http.ResponseWriter, r *http.Request) {
 		Categorias: queryCategorias(), Marcas: queryMarcas(),
 		CategoriaSlug: catSlug, MarcaNombre: marcaNombre,
 		PrecioMax: precioMax, Estado: estado,
+		Telefono: getConfig("telefono"), Negocio: getConfig("negocio_nombre"),
 	})
 }
 
@@ -163,6 +169,7 @@ func handlePortalModelo(w http.ResponseWriter, r *http.Request) {
 		Title: mo.Nombre, Theme: theme,
 		ModeloNombre: mo.Nombre, MarcaNombre: mo.MarcaNombre,
 		AñoLanzamiento: mo.AñoLanzamiento, Piezas: piezas,
+		Telefono: getConfig("telefono"), Negocio: getConfig("negocio_nombre"),
 	})
 }
 
@@ -190,20 +197,29 @@ func handlePortalPieza(w http.ResponseWriter, r *http.Request) {
 	rows.Close()
 
 	theme := getConfig("tema")
-	renderTemplate(w, "portal/pieza.html", PageData{Title: p.Nombre, Pieza: p, Theme: theme})
+	renderTemplate(w, "portal/pieza.html", PageData{Title: p.Nombre, Pieza: p, Theme: theme,
+		Telefono: getConfig("telefono"), Negocio: getConfig("negocio_nombre"),
+	})
 }
 
 // ─── API Handlers ─────────────────────────────────────────────────
 
 func handleAPIPiezas(w http.ResponseWriter, r *http.Request) {
-	rows, _ := db.Query("SELECT p.id, p.nombre, p.precio, p.stock, p.codigo FROM piezas p WHERE p.activa = 1 ORDER BY p.nombre")
+	s := r.URL.Query().Get("s")
+	var rows *sql.Rows
+	if s != "" {
+		like := "%" + s + "%"
+		rows, _ = db.Query("SELECT p.id, p.nombre, p.precio, p.stock, p.codigo, COALESCE(p.imagen_url,'') FROM piezas p WHERE p.activa = 1 AND (p.nombre LIKE ? OR p.codigo LIKE ? OR p.descripcion LIKE ?) ORDER BY p.nombre LIMIT 20", like, like, like)
+	} else {
+		rows, _ = db.Query("SELECT p.id, p.nombre, p.precio, p.stock, p.codigo, COALESCE(p.imagen_url,'') FROM piezas p WHERE p.activa = 1 ORDER BY p.nombre LIMIT 50")
+	}
 	var items []map[string]any
 	for rows.Next() {
 		var id, stock int
-		var nombre, codigo string
+		var nombre, codigo, img string
 		var precio float64
-		rows.Scan(&id, &nombre, &precio, &stock, &codigo)
-		items = append(items, map[string]any{"id": id, "nombre": nombre, "precio": precio, "stock": stock, "codigo": codigo})
+		rows.Scan(&id, &nombre, &precio, &stock, &codigo, &img)
+		items = append(items, map[string]any{"id": id, "nombre": nombre, "precio": precio, "stock": stock, "codigo": codigo, "imagen_url": img})
 	}
 	rows.Close()
 	w.Header().Set("Content-Type", "application/json")

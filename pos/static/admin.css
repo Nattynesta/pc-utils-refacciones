@@ -1,27 +1,61 @@
+:root {
+    --sidebar-width: 230px;
+    --primary: #6C5CE7;
+}
 .sidebar {
-    width: 220px;
+    width: var(--sidebar-width);
     min-height: 100vh;
     flex-shrink: 0;
+    background: linear-gradient(180deg, #2D3436 0%, #1a1a2e 100%) !important;
 }
 .sidebar .nav-link {
-    color: rgba(255,255,255,0.7);
-    padding: 0.6rem 1rem;
+    color: rgba(255,255,255,0.6);
+    padding: 0.7rem 1.2rem;
     border-radius: 0;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
 }
 .sidebar .nav-link:hover {
     color: #fff;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.08);
+    border-left-color: var(--primary);
 }
 .sidebar .nav-link.active {
     color: #fff;
-    background: rgba(255,255,255,0.15);
+    background: rgba(108,92,231,0.2);
+    border-left-color: var(--primary);
 }
 main {
-    background: #f0f2f5;
+    background: #f5f6fa;
     min-height: 100vh;
+}
+.card {
+    border: none !important;
+    border-radius: 14px !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06) !important;
+}
+.card-header {
+    background: #fff !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    font-weight: 600;
+    border-radius: 14px 14px 0 0 !important;
 }
 .table th {
     background: #f8f9fa;
     font-weight: 600;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #636e72;
+    border-bottom: 2px solid #eee !important;
 }
+.table td { vertical-align: middle; }
+.badge { font-weight: 500; }
+.stats-card {
+    transition: transform 0.2s;
+}
+.stats-card:hover {
+    transform: translateY(-2px);
+}
+.btn { border-radius: 10px !important; }
