@@ -1,0 +1,16 @@
+{{define "title"}}Compatibilidad — RefacCel Admin{{end}}
+{{define "adminContent"}}
+<div class="d-flex justify-content-between align-items-center mb-3"><h4 class="mb-0"><i class="bi bi-link"></i> Compatibilidad Pieza ↔ Modelo</h4></div>
+<div class="row g-3">
+    <div class="col-md-6"><div class="card shadow-sm"><div class="card-header">Asignar compatibilidad</div><div class="card-body">
+        <form method="POST" action="/admin/compatibilidad"><input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+            <div class="mb-3"><label class="form-label">Pieza</label><select name="pieza_id" class="form-select" required><option value="">Seleccionar pieza</option>{{range .Piezas}}<option value="{{.ID}}">{{.Codigo}} — {{.Nombre}}</option>{{end}}</select></div>
+            <div class="mb-3"><label class="form-label">Modelo compatible</label><input type="text" id="modeloSearch" class="form-control mb-2" placeholder="Buscar modelo..."><div class="border rounded" style="max-height:200px;overflow-y:auto">{{range .Modelos}}<div class="form-check modelo-item" data-name="{{.MarcaNombre}} {{.Nombre}}"><input class="form-check-input" type="checkbox" name="modelo_ids" value="{{.ID}}" id="m{{.ID}}"><label class="form-check-label" for="m{{.ID}}">{{.MarcaNombre}} {{.Nombre}}</label></div>{{end}}</div></div>
+            <div class="mb-3"><label class="form-label">Notas</label><input type="text" name="notas" class="form-control" placeholder="Ej: solo versión 64GB"></div>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-link"></i> Asignar</button>
+        </form>
+    </div></div></div>
+    <div class="col-md-6"><div class="card shadow-sm"><div class="card-header">Compatibilidades recientes</div><div class="card-body p-0"><table class="table table-hover mb-0"><thead><tr><th>Pieza</th><th>Modelo</th><th>Notas</th></tr></thead><tbody>{{range .Compatibilidades}}<tr><td>{{.PiezaNombre}}</td><td>{{.MarcaNombre}} {{.ModeloNombre}}</td><td>{{.Notas}}</td></tr>{{end}}</tbody></table></div></div></div>
+</div>
+<script>document.getElementById("modeloSearch")?.addEventListener("input",function(){let q=this.value.toLowerCase();document.querySelectorAll(".modelo-item").forEach(e=>{e.style.display=e.dataset.name.toLowerCase().includes(q)?"":"none"})});</script>
+{{end}}

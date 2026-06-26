@@ -1,0 +1,77 @@
+{{define "content"}}
+<div class="hero-section bg-primary text-white text-center py-5">
+    <div class="container">
+        <h1 class="display-4 fw-bold"><i class="bi bi-phone"></i> RefacCel</h1>
+        <p class="lead mb-4">Encuentra la pieza que necesitas para tu celular</p>
+        <form action="/buscar" method="GET" class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="input-group input-group-lg">
+                    <input class="form-control" type="search" name="q" placeholder="Busca por modelo, pieza o código..." required>
+                    <button class="btn btn-light" type="submit"><i class="bi bi-search"></i> Buscar</button>
+                </div>
+            </div>
+        </form>
+        <div class="mt-3"><small class="text-white-50">Ej: iPhone 12 pantalla, Samsung batería, Xiaomi flex carga</small></div>
+    </div>
+</div>
+
+<div class="container my-5">
+    <div class="row g-3">
+        {{range .Categorias}}
+        <div class="col-6 col-md-4 col-lg-3">
+            <a href="/buscar?categoria={{.Slug}}" class="text-decoration-none">
+                <div class="card h-100 border-0 shadow-sm category-card text-center">
+                    <div class="card-body py-4">
+                        <i class="bi bi-{{.Icono}} display-5 text-primary"></i>
+                        <h6 class="card-title mt-2">{{.Nombre}}</h6>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {{end}}
+    </div>
+
+    <h3 class="mt-5 mb-3"><i class="bi bi-bookmark-star"></i> Marcas Populares</h3>
+    <div class="row g-2">
+        {{range .Marcas}}
+        <div class="col-4 col-md-2">
+            <a href="/buscar?marca={{.Nombre}}" class="text-decoration-none">
+                <div class="card h-100 border-0 shadow-sm brand-card text-center">
+                    <div class="card-body py-3">
+                        <i class="bi bi-phone display-6 text-secondary"></i>
+                        <div class="small mt-1 fw-semibold">{{.Nombre}}</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {{end}}
+    </div>
+
+    {{if .Recientes}}
+    <h3 class="mt-5 mb-3"><i class="bi bi-clock-history"></i> Piezas Recién Agregadas</h3>
+    <div class="row g-3">
+        {{range .Recientes}}
+        <div class="col-6 col-md-4 col-lg-3">
+            <a href="/pieza/{{.ID}}" class="text-decoration-none">
+                <div class="card h-100 border-0 shadow-sm">
+                    {{if .ImagenURL}}
+                    <img src="{{.ImagenURL}}" class="card-img-top" alt="{{.Nombre}}" style="height:150px;object-fit:contain">
+                    {{else}}
+                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height:150px">
+                        <i class="bi bi-image text-muted" style="font-size:3rem"></i>
+                    </div>
+                    {{end}}
+                    <div class="card-body">
+                        <h6 class="card-title">{{.Nombre}}</h6>
+                        <p class="card-text text-success fw-bold fs-5">${{printf "%.2f" .Precio}}</p>
+                        <span class="badge bg-info">{{.CategoriaNombre}}</span>
+                        {{if le .Stock 0}}<span class="badge bg-danger">Agotado</span>{{end}}
+                    </div>
+                </div>
+            </a>
+        </div>
+        {{end}}
+    </div>
+    {{end}}
+</div>
+{{end}}

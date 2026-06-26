@@ -1,0 +1,20 @@
+{{define "title"}}Ventas — RefacCel Admin{{end}}
+{{define "adminContent"}}
+<div class="d-flex justify-content-between align-items-center mb-3"><h4 class="mb-0"><i class="bi bi-cart"></i> Ventas</h4><button class="btn btn-primary" onclick="nuevaVenta()"><i class="bi bi-plus-lg"></i> Nueva Venta</button></div>
+<div class="card shadow-sm"><div class="card-body p-0"><table class="table table-hover mb-0"><thead><tr><th>Folio</th><th>Cliente</th><th>Total</th><th>Pago</th><th>Vendedor</th><th>Fecha</th></tr></thead><tbody>{{range .Ventas}}<tr><td>{{.Folio}}</td><td>{{.ClienteNombre}}</td><td>${{printf "%.2f" .Total}}</td><td><span class="badge bg-info">{{.FormaPago}}</span></td><td>{{.VendedorNombre}}</td><td>{{.CreadoEn}}</td></tr>{{end}}</tbody></table></div></div>
+<div class="modal fade" id="ventaModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><form id="ventaForm" method="POST" action="/admin/ventas"><input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+<div class="modal-header"><h5 class="modal-title">Nueva Venta</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body">
+    <div class="row g-3 mb-3"><div class="col-md-4"><label class="form-label">Cliente</label><input type="text" name="cliente_nombre" class="form-control" placeholder="Nombre"></div><div class="col-md-4"><label class="form-label">Teléfono</label><input type="text" name="cliente_telefono" class="form-control" placeholder="Teléfono"></div><div class="col-md-4"><label class="form-label">Pago</label><select name="forma_pago" class="form-select"><option value="efectivo">Efectivo</option><option value="tarjeta">Tarjeta</option><option value="transferencia">Transferencia</option></select></div></div>
+    <h6>Agregar piezas</h6><div class="mb-3"><select id="piezaSelect" class="form-select"><option value="">Seleccionar pieza...</option>{{range .Piezas}}<option value="{{.ID}}" data-precio="{{.Precio}}" data-nombre="{{.Codigo}} — {{.Nombre}}" data-stock="{{.Stock}}">{{.Codigo}} — {{.Nombre}} ({{.Stock}})</option>{{end}}</select></div>
+    <table class="table" id="detalleTable"><thead><tr><th>Pieza</th><th>Precio</th><th>Cant</th><th>Subtotal</th><th></th></tr></thead><tbody></tbody><tfoot><tr><td colspan="3" class="text-end fw-bold">Total:</td><td id="totalVenta" class="fw-bold">$0.00</td><td></td></tr></tfoot></table>
+    <div class="mb-3"><label class="form-label">Notas</label><textarea name="notas" class="form-control" rows="2"></textarea></div>
+</div>
+<div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Registrar Venta</button></div>
+</form></div></div></div>
+<script>
+let detalle=[];function nuevaVenta(){new bootstrap.Modal(document.getElementById('ventaModal')).show();}
+document.getElementById('piezaSelect')?.addEventListener('change',function(){if(!this.value)return;let o=this.options[this.selectedIndex];let id=parseInt(this.value);if(detalle.find(d=>d.id===id))return;detalle.push({id,nombre:o.dataset.nombre,precio:parseFloat(o.dataset.precio),cant:1,stock:parseInt(o.dataset.stock)});renderDetalle();this.value='';});
+function renderDetalle(){let tbody=document.querySelector('#detalleTable tbody');tbody.innerHTML='';let total=0;detalle.forEach((d,i)=>{let s=d.precio*d.cant;total+=s;tbody.innerHTML+='<tr><td><input type="hidden" name="pieza_id" value="'+d.id+'">'+d.nombre+'</td><td>$'+d.precio.toFixed(2)+'</td><td><input type="number" name="cantidad" class="form-control form-control-sm" style="width:60px" value="'+d.cant+'" min="1" onchange="detalle['+i+'].cant=parseInt(this.value);renderDetalle()"></td><td>$'+s.toFixed(2)+'</td><td><button class="btn btn-sm btn-danger" onclick="detalle.splice('+i+',1);renderDetalle()"><i class="bi bi-x"></i></button></td></tr>';});document.getElementById('totalVenta').textContent='$'+total.toFixed(2);}
+</script>
+{{end}}

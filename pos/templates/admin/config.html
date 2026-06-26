@@ -1,0 +1,11 @@
+{{define "title"}}Configuración — RefacCel Admin{{end}}
+{{define "adminContent"}}
+<h4 class="mb-3"><i class="bi bi-gear"></i> Configuración</h4>
+<div class="card shadow-sm"><div class="card-body">
+<form method="POST" action="/admin/config"><input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+    <h6>Nombre del negocio</h6><div class="mb-3"><input type="text" name="negocio_nombre" class="form-control" value="{{.Config.NegocioNombre}}"></div>
+    <h6>Tema del portal público</h6><div class="mb-3"><select name="tema" class="form-select"><option value="light" {{if eq .Config.Tema "light"}}selected{{end}}>Claro</option><option value="dark" {{if eq .Config.Tema "dark"}}selected{{end}}>Oscuro</option></select></div>
+    <h6>Crear nuevo usuario</h6><div class="row g-2 mb-3"><div class="col-md-4"><input type="text" name="nuevo_usuario" class="form-control" placeholder="Usuario"></div><div class="col-md-4"><input type="password" name="nueva_clave" class="form-control" placeholder="Contraseña"></div><div class="col-md-4"><select name="nuevo_rol" class="form-select"><option value="vendedor">Vendedor</option><option value="admin">Admin</option></select></div></div>
+    <button type="submit" class="btn btn-primary"><i class="bi bi-floppy"></i> Guardar</button>
+</form></div></div>
+{{end}}

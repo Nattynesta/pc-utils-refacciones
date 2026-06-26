@@ -1,0 +1,27 @@
+.sidebar {
+    width: 220px;
+    min-height: 100vh;
+    flex-shrink: 0;
+}
+.sidebar .nav-link {
+    color: rgba(255,255,255,0.7);
+    padding: 0.6rem 1rem;
+    border-radius: 0;
+}
+.sidebar .nav-link:hover {
+    color: #fff;
+    background: rgba(255,255,255,0.1);
+}
+.sidebar .nav-link.active {
+    color: #fff;
+    background: rgba(255,255,255,0.15);
+}
+main {
+    background: #f0f2f5;
+    min-height: 100vh;
+}
+.table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    font-size: 0.85rem;
+}

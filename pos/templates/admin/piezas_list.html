@@ -1,0 +1,17 @@
+{{define "title"}}Piezas — RefacCel Admin{{end}}
+{{define "adminContent"}}
+<div class="d-flex justify-content-between align-items-center mb-3"><h4 class="mb-0"><i class="bi bi-box"></i> Piezas</h4><a href="/admin/piezas/nueva" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Nueva</a></div>
+<div class="card shadow-sm"><div class="card-body"><div class="table-responsive"><table class="table table-hover">
+    <thead><tr><th>Código</th><th>Nombre</th><th>Categoría</th><th>Precio</th><th>Stock</th><th>Estado</th><th>Acciones</th></tr></thead>
+    <tbody>{{range .Piezas}}<tr>
+        <td>{{.Codigo}}</td><td>{{.Nombre}}</td><td>{{.CategoriaNombre}}</td><td>${{printf "%.2f" .Precio}}</td>
+        <td><span class="badge bg-{{if le .Stock 0}}danger{{else if lt .Stock .StockMinimo}}warning{{else}}success{{end}}">{{.Stock}}</span></td>
+        <td><span class="badge bg-{{if eq .Estado "nuevo"}}success{{else}}secondary{{end}}">{{.Estado}}</span></td>
+        <td><a href="/admin/piezas/{{.ID}}/editar" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+            <button onclick="eliminarPieza({{.ID}},'{{.CSRFToken}}')" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button></td>
+    </tr>{{end}}</tbody>
+</table></div></div></div>
+<script>
+function eliminarPieza(id,tok){if(!confirm("¿Eliminar?"))return;fetch("/admin/piezas/"+id,{method:"DELETE",headers:{"X-CSRF-Token":tok}}).then(r=>r.json()).then(d=>{if(d.success)location.reload();else alert(d.error)});}
+</script>
+{{end}}

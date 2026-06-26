@@ -1,0 +1,15 @@
+{{define "title"}}Modelos — RefacCel Admin{{end}}
+{{define "adminContent"}}
+<div class="d-flex justify-content-between align-items-center mb-3"><h4 class="mb-0"><i class="bi bi-phone"></i> Modelos de Celular</h4><button class="btn btn-primary" onclick="nuevoModelo()"><i class="bi bi-plus-lg"></i> Nuevo Modelo</button></div>
+<div class="card shadow-sm mb-3"><div class="card-body"><form class="row g-2" method="GET" action="/admin/modelos">
+    <div class="col-auto"><select name="marca_id" class="form-select"><option value="">Todas las marcas</option>{{range .Marcas}}<option value="{{.ID}}" {{if eq $.MarcaID .ID}}selected{{end}}>{{.Nombre}}</option>{{end}}</select></div>
+    <div class="col-auto"><input type="text" name="q" class="form-control" placeholder="Buscar modelo..." value="{{.Query}}"></div>
+    <div class="col-auto"><button type="submit" class="btn btn-outline-primary"><i class="bi bi-search"></i></button></div>
+</form></div></div>
+<div class="card shadow-sm"><div class="card-body p-0"><table class="table table-hover mb-0">
+    <thead><tr><th>Marca</th><th>Modelo</th><th>Año</th><th>Piezas</th><th>Activo</th></tr></thead>
+    <tbody>{{range .Modelos}}<tr><td>{{.MarcaNombre}}</td><td>{{.Nombre}}</td><td>{{if .AñoLanzamiento}}{{.AñoLanzamiento}}{{else}}—{{end}}</td><td>{{.PiezasCount}}</td><td>{{if .Activo}}<span class="badge bg-success">Sí</span>{{else}}<span class="badge bg-secondary">No</span>{{end}}</td></tr>{{end}}</tbody>
+</table></div></div>
+<div class="modal fade" id="modeloModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><form method="POST" action="/admin/modelos"><input type="hidden" name="_csrf" value="{{.CSRFToken}}"><div class="modal-header"><h5 class="modal-title">Nuevo Modelo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="mb-3"><label class="form-label">Marca</label><select name="marca_id" class="form-select" required><option value="">Seleccionar</option>{{range .Marcas}}<option value="{{.ID}}">{{.Nombre}}</option>{{end}}</select></div><div class="mb-3"><label class="form-label">Modelo</label><input type="text" name="nombre" class="form-control" required placeholder="Ej: iPhone 12, Galaxy S23"></div><div class="mb-3"><label class="form-label">Año de lanzamiento</label><input type="number" name="año" class="form-control" placeholder="2024" min="2000" max="2030"></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Guardar</button></div></form></div></div></div>
+<script>function nuevoModelo(){new bootstrap.Modal(document.getElementById('modeloModal')).show();}</script>
+{{end}}

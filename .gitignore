@@ -1,0 +1,6 @@
+*.db
+*.db-wal
+*.db-shm
+.csrfkey
+uploads/
+refacciones*

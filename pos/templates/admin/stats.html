@@ -1,0 +1,12 @@
+{{define "title"}}Estadísticas — RefacCel Admin{{end}}
+{{define "adminContent"}}
+<h4 class="mb-3"><i class="bi bi-bar-chart"></i> Estadísticas</h4>
+<div class="row g-3">
+    <div class="col-md-5"><div class="card shadow-sm"><div class="card-body"><h5>Resumen</h5><table class="table table-sm"><tr><td>Total piezas</td><td class="fw-bold">{{.Stats.TotalPiezas}}</td></tr><tr><td>Valor inventario</td><td class="fw-bold">${{printf "%.2f" .Stats.ValorInventario}}</td></tr><tr><td>Ganancia potencial</td><td class="fw-bold">${{printf "%.2f" .Stats.GananciaPotencial}}</td></tr><tr><td>Agotadas</td><td class="fw-bold text-danger">{{.Stats.Agotadas}}</td></tr><tr><td>Ventas totales</td><td class="fw-bold">{{.Stats.TotalVentas}}</td></tr></table></div></div></div>
+    <div class="col-md-7"><div class="card shadow-sm"><div class="card-body"><h5>Piezas por categoría</h5><canvas id="piezasChart" style="max-height:250px"></canvas></div></div></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+new Chart(document.getElementById('piezasChart'),{type:'pie',data:{labels:[{{range .Stats.PiezasPorCategoria}}'{{.Nombre}}',{{end}}],datasets:[{data:[{{range .Stats.PiezasPorCategoria}}{{.Count}},{{end}}],backgroundColor:['#0d6efd','#198754','#ffc107','#dc3545','#6f42c1','#fd7e14','#20c997','#0dcaf0','#6610f2','#d63384']}]}});
+</script>
+{{end}}

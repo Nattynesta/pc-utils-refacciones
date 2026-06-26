@@ -1,0 +1,37 @@
+{{define "title"}}{{.Pieza.Nombre}} — RefacCel{{end}}
+{{define "content"}}
+<nav aria-label="breadcrumb"><ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">Inicio</a></li>
+    <li class="breadcrumb-item"><a href="/buscar?categoria={{.Pieza.CategoriaSlug}}">{{.Pieza.CategoriaNombre}}</a></li>
+    <li class="breadcrumb-item active">{{.Pieza.Nombre}}</li>
+</ol></nav>
+
+<div class="row g-4">
+    <div class="col-md-5">
+        {{if .Pieza.ImagenURL}}<img src="{{.Pieza.ImagenURL}}" class="img-fluid rounded shadow-sm" alt="{{.Pieza.Nombre}}">{{else}}<div class="bg-light rounded d-flex align-items-center justify-content-center" style="height:300px"><i class="bi bi-image text-muted" style="font-size:5rem"></i></div>{{end}}
+    </div>
+    <div class="col-md-7">
+        <h2 class="mb-1">{{.Pieza.Nombre}}</h2>
+        <p class="text-muted mb-2">Código: <strong>{{.Pieza.Codigo}}</strong></p>
+        <div class="mb-3">
+            <span class="badge bg-info fs-6">{{.Pieza.CategoriaNombre}}</span>
+            <span class="badge bg-{{if eq .Pieza.Estado "nuevo"}}success{{else if eq .Pieza.Estado "reacondicionado"}}warning{{else}}secondary{{end}} fs-6">{{.Pieza.Estado}}</span>
+        </div>
+        <h3 class="text-success fw-bold">${{printf "%.2f" .Pieza.Precio}}</h3>
+        <div class="my-3">{{if gt .Pieza.Stock 0}}<span class="badge bg-success fs-6"><i class="bi bi-check-circle"></i> En stock ({{.Pieza.Stock}} disponibles)</span>{{else}}<span class="badge bg-danger fs-6"><i class="bi bi-x-circle"></i> Agotado</span>{{end}}</div>
+        {{if .Pieza.Descripcion}}<div class="mb-3"><h6>Descripción</h6><p>{{.Pieza.Descripcion}}</p></div>{{end}}
+        <div class="row g-2 mb-3">
+            <div class="col-6"><small class="text-muted">Estado</small><div>{{.Pieza.Estado}}</div></div>
+            <div class="col-6"><small class="text-muted">Garantía</small><div>{{.Pieza.GarantiaDias}} días</div></div>
+            {{if .Pieza.Proveedor}}<div class="col-6"><small class="text-muted">Proveedor</small><div>{{.Pieza.Proveedor}}</div></div>{{end}}
+            {{if .Pieza.Ubicacion}}<div class="col-6"><small class="text-muted">Ubicación</small><div>{{.Pieza.Ubicacion}}</div></div>{{end}}
+        </div>
+        {{if .Pieza.Compatibles}}
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white"><i class="bi bi-devices"></i> Compatible con</div>
+            <div class="card-body"><div class="row g-2">{{range .Pieza.Compatibles}}<div class="col-6 col-md-4"><a href="/modelo/{{.ModeloID}}" class="text-decoration-none"><div class="border rounded p-2 text-center"><i class="bi bi-phone"></i><small class="d-block">{{.MarcaNombre}} {{.ModeloNombre}}</small></div></a></div>{{end}}</div></div>
+        </div>
+        {{end}}
+    </div>
+</div>
+{{end}}

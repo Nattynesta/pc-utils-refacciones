@@ -1,0 +1,25 @@
+{{define "title"}}{{if .Pieza}}Editar{{else}}Nueva{{end}} Pieza — RefacCel Admin{{end}}
+{{define "adminContent"}}
+<div class="d-flex justify-content-between align-items-center mb-3"><h4 class="mb-0"><i class="bi bi-box"></i> {{if .Pieza}}Editar{{else}}Nueva{{end}} Pieza</h4><a href="/admin/piezas" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a></div>
+<div class="card shadow-sm"><div class="card-body">
+<form method="POST" action="/admin/piezas{{if .Pieza}}/{{.Pieza.ID}}{{end}}">
+    <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+    {{if .Pieza}}<input type="hidden" name="_method" value="PUT">{{end}}
+    <div class="row g-3">
+        <div class="col-md-6"><label class="form-label">Nombre *</label><input type="text" name="nombre" class="form-control" value="{{if .Pieza}}{{.Pieza.Nombre}}{{end}}" required></div>
+        <div class="col-md-3"><label class="form-label">Código *</label><input type="text" name="codigo" class="form-control" value="{{if .Pieza}}{{.Pieza.Codigo}}{{end}}" required></div>
+        <div class="col-md-3"><label class="form-label">Categoría *</label><select name="categoria_id" class="form-select" required><option value="">Seleccionar</option>{{range .Categorias}}<option value="{{.ID}}" {{if and $.Pieza (eq $.Pieza.CategoriaID .ID)}}selected{{end}}>{{.Nombre}}</option>{{end}}</select></div>
+        <div class="col-md-12"><label class="form-label">Descripción</label><textarea name="descripcion" class="form-control" rows="3">{{if .Pieza}}{{.Pieza.Descripcion}}{{end}}</textarea></div>
+        <div class="col-md-3"><label class="form-label">Precio *</label><div class="input-group"><span class="input-group-text">$</span><input type="number" name="precio" step="0.01" class="form-control" value="{{if .Pieza}}{{printf "%.2f" .Pieza.Precio}}{{end}}" required></div></div>
+        <div class="col-md-3"><label class="form-label">Costo</label><div class="input-group"><span class="input-group-text">$</span><input type="number" name="costo" step="0.01" class="form-control" value="{{if .Pieza}}{{printf "%.2f" .Pieza.Costo}}{{end}}"></div></div>
+        <div class="col-md-2"><label class="form-label">Stock</label><input type="number" name="stock" class="form-control" value="{{if .Pieza}}{{.Pieza.Stock}}{{else}}0{{end}}"></div>
+        <div class="col-md-2"><label class="form-label">Stock mínimo</label><input type="number" name="stock_minimo" class="form-control" value="{{if .Pieza}}{{.Pieza.StockMinimo}}{{else}}5{{end}}"></div>
+        <div class="col-md-2"><label class="form-label">Estado</label><select name="estado" class="form-select"><option value="nuevo" {{if and .Pieza (eq .Pieza.Estado "nuevo")}}selected{{end}}>Nuevo</option><option value="reacondicionado" {{if and .Pieza (eq .Pieza.Estado "reacondicionado")}}selected{{end}}>Reacondicionado</option><option value="usado" {{if and .Pieza (eq .Pieza.Estado "usado")}}selected{{end}}>Usado</option></select></div>
+        <div class="col-md-3"><label class="form-label">Garantía (días)</label><input type="number" name="garantia_dias" class="form-control" value="{{if .Pieza}}{{.Pieza.GarantiaDias}}{{else}}90{{end}}"></div>
+        <div class="col-md-3"><label class="form-label">Proveedor</label><input type="text" name="proveedor" class="form-control" value="{{if .Pieza}}{{.Pieza.Proveedor}}{{end}}"></div>
+        <div class="col-md-3"><label class="form-label">Ubicación</label><input type="text" name="ubicacion" class="form-control" value="{{if .Pieza}}{{.Pieza.Ubicacion}}{{end}}" placeholder="Estante / Bodega"></div>
+        <div class="col-md-12"><label class="form-label">Imagen URL</label><input type="text" name="imagen_url" class="form-control" value="{{if .Pieza}}{{.Pieza.ImagenURL}}{{end}}"></div>
+    </div>
+    <div class="mt-4"><button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> {{if .Pieza}}Guardar Cambios{{else}}Crear Pieza{{end}}</button><a href="/admin/piezas" class="btn btn-outline-secondary ms-2">Cancelar</a></div>
+</form></div></div>
+{{end}}
