@@ -1,12 +1,19 @@
 package main
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // ─── Auth Handlers ────────────────────────────────────────────────
@@ -324,6 +331,9 @@ func handleAdminPiezaNuevaPage(w http.ResponseWriter, r *http.Request) {
 	pd.Title = "Nueva Pieza"
 	pd.Active = "piezas"
 	pd.Categorias = queryCategorias()
+	if s := r.URL.Query().Get("success"); s != "" {
+		pd.Success = "✓ Pieza creada: " + s + ". ¡Agrega otra!"
+	}
 	renderTemplate(w, "admin/pieza_form.html", pd)
 }
 
@@ -351,6 +361,10 @@ func handleAdminPiezaCrear(w http.ResponseWriter, r *http.Request) {
 		pd.Error = err.Error()
 		pd.Categorias = queryCategorias()
 		renderTemplate(w, "admin/pieza_form.html", pd)
+		return
+	}
+	if r.FormValue("_save_and_new") == "1" {
+		http.Redirect(w, r, "/admin/piezas/nueva?success="+nombre, http.StatusSeeOther)
 		return
 	}
 	http.Redirect(w, r, "/admin/piezas", http.StatusSeeOther)
@@ -637,6 +651,46 @@ func handleAdminConfigGuardar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/admin/config", http.StatusSeeOther)
+}
+
+// ─── Upload Handler ───────────────────────────────────────────────
+
+func handleAdminUpload(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 5<<20) // 5MB max
+	if err := r.ParseMultipartForm(5 << 20); err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"error": "Archivo muy grande (máx 5MB)"})
+		return
+	}
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"error": "No se recibió archivo"})
+		return
+	}
+	defer file.Close()
+
+	ext := filepath.Ext(header.Filename)
+	if ext == "" {
+		ext = ".jpg"
+	}
+	ext = strings.ToLower(ext)
+	allowed := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".webp": true, ".gif": true}
+	if !allowed[ext] {
+		json.NewEncoder(w).Encode(map[string]any{"error": "Formato no permitido: " + ext})
+		return
+	}
+
+	b := make([]byte, 8)
+	rand.Read(b)
+	filename := fmt.Sprintf("%d_%s%s", time.Now().UnixMilli(), hex.EncodeToString(b), ext)
+	dst, err := os.Create(filepath.Join("uploads", filename))
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"error": "Error al guardar archivo"})
+		return
+	}
+	defer dst.Close()
+	io.Copy(dst, file)
+
+	json.NewEncoder(w).Encode(map[string]any{"url": "/uploads/" + filename})
 }
 
 // ─── Queries ──────────────────────────────────────────────────────

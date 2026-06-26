@@ -59,3 +59,107 @@ main {
     transform: translateY(-2px);
 }
 .btn { border-radius: 10px !important; }
+
+/* ─── Category picker ─── */
+.cat-card {
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 10px 6px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+}
+.cat-card:hover {
+  border-color: #6C5CE7;
+  background: #f8f5ff;
+  transform: translateY(-1px);
+}
+.cat-card.selected {
+  border-color: #6C5CE7;
+  background: #f0edff;
+  box-shadow: 0 0 0 3px rgba(108,92,231,0.15);
+}
+.cat-card .cat-icon {
+  font-size: 1.5rem;
+  color: #6C5CE7;
+  margin-bottom: 4px;
+}
+.cat-card .cat-name {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #2D3436;
+  line-height: 1.2;
+}
+
+/* ─── Upload zone ─── */
+.upload-zone {
+  border: 2px dashed #ccc;
+  border-radius: 14px;
+  padding: 30px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fafafa;
+  position: relative;
+}
+.upload-zone:hover, .upload-zone.dragover {
+  border-color: #6C5CE7;
+  background: #f8f5ff;
+}
+.upload-zone.dragover {
+  border-color: #5A4BD1;
+  background: #f0edff;
+}
+.upload-icon {
+  font-size: 2.5rem;
+  color: #6C5CE7;
+  display: block;
+  margin-bottom: 8px;
+}
+.upload-preview {
+  position: relative;
+  display: inline-block;
+}
+.upload-preview img {
+  max-height: 180px;
+  border-radius: 10px;
+  object-fit: contain;
+  background: #fff;
+}
+.upload-overlay {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+.upload-progress {
+  padding: 20px;
+}
+
+/* ─── Toast (admin) ─── */
+.admin-toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+}
+.admin-toast {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+  padding: 12px 18px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: adminSlideIn 0.3s ease;
+  min-width: 260px;
+  border-left: 4px solid #6C5CE7;
+  font-size: 0.9rem;
+}
+.admin-toast.success { border-left-color: #00b894; }
+.admin-toast.error { border-left-color: #d63031; }
+@keyframes adminSlideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}

@@ -130,6 +130,7 @@ func main() {
 	mux.HandleFunc("GET /admin/ventas", requireAuth(handleAdminVentasList))
 	mux.HandleFunc("GET /admin/config", requireAuth(handleAdminConfigPage))
 	mux.HandleFunc("POST /admin/config", requireAuth(handleAdminConfigGuardar))
+	mux.HandleFunc("POST /admin/upload", requireAuth(handleAdminUpload))
 
 	// Uploads
 	os.MkdirAll("uploads", 0755)

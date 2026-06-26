@@ -1,3 +1,17 @@
+// ─── Toast ───
+function showToast(msg, type) {
+  type = type || 'info';
+  const icons = {success:'bi-check-circle-fill text-success', error:'bi-x-circle-fill text-danger', info:'bi-info-circle-fill text-primary'};
+  const c = document.querySelector('.admin-toast-container') || (() => {
+    const el = document.createElement('div'); el.className = 'admin-toast-container'; document.body.appendChild(el); return el;
+  })();
+  const t = document.createElement('div');
+  t.className = 'admin-toast ' + type;
+  t.innerHTML = `<i class="bi ${icons[type]||icons.info}"></i><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; setTimeout(() => t.remove(), 300); }, 3000);
+}
+
 function eliminarPieza(id,tok){
     if(!confirm('¿Eliminar esta pieza?')) return;
     fetch('/admin/piezas/'+id,{method:'DELETE',headers:{'X-CSRF-Token':tok}})

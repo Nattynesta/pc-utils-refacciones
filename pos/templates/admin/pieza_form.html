@@ -1,25 +1,244 @@
 {{define "title"}}{{if .Pieza}}Editar{{else}}Nueva{{end}} Pieza — RefacCel Admin{{end}}
 {{define "adminContent"}}
-<div class="d-flex justify-content-between align-items-center mb-3"><h4 class="mb-0"><i class="bi bi-box"></i> {{if .Pieza}}Editar{{else}}Nueva{{end}} Pieza</h4><a href="/admin/piezas" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a></div>
-<div class="card shadow-sm"><div class="card-body">
-<form method="POST" action="/admin/piezas{{if .Pieza}}/{{.Pieza.ID}}{{end}}">
-    <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
-    {{if .Pieza}}<input type="hidden" name="_method" value="PUT">{{end}}
-    <div class="row g-3">
-        <div class="col-md-6"><label class="form-label">Nombre *</label><input type="text" name="nombre" class="form-control" value="{{if .Pieza}}{{.Pieza.Nombre}}{{end}}" required></div>
-        <div class="col-md-3"><label class="form-label">Código *</label><input type="text" name="codigo" class="form-control" value="{{if .Pieza}}{{.Pieza.Codigo}}{{end}}" required></div>
-        <div class="col-md-3"><label class="form-label">Categoría *</label><select name="categoria_id" class="form-select" required><option value="">Seleccionar</option>{{range .Categorias}}<option value="{{.ID}}" {{if and $.Pieza (eq $.Pieza.CategoriaID .ID)}}selected{{end}}>{{.Nombre}}</option>{{end}}</select></div>
-        <div class="col-md-12"><label class="form-label">Descripción</label><textarea name="descripcion" class="form-control" rows="3">{{if .Pieza}}{{.Pieza.Descripcion}}{{end}}</textarea></div>
-        <div class="col-md-3"><label class="form-label">Precio *</label><div class="input-group"><span class="input-group-text">$</span><input type="number" name="precio" step="0.01" class="form-control" value="{{if .Pieza}}{{printf "%.2f" .Pieza.Precio}}{{end}}" required></div></div>
-        <div class="col-md-3"><label class="form-label">Costo</label><div class="input-group"><span class="input-group-text">$</span><input type="number" name="costo" step="0.01" class="form-control" value="{{if .Pieza}}{{printf "%.2f" .Pieza.Costo}}{{end}}"></div></div>
-        <div class="col-md-2"><label class="form-label">Stock</label><input type="number" name="stock" class="form-control" value="{{if .Pieza}}{{.Pieza.Stock}}{{else}}0{{end}}"></div>
-        <div class="col-md-2"><label class="form-label">Stock mínimo</label><input type="number" name="stock_minimo" class="form-control" value="{{if .Pieza}}{{.Pieza.StockMinimo}}{{else}}5{{end}}"></div>
-        <div class="col-md-2"><label class="form-label">Estado</label><select name="estado" class="form-select"><option value="nuevo" {{if and .Pieza (eq .Pieza.Estado "nuevo")}}selected{{end}}>Nuevo</option><option value="reacondicionado" {{if and .Pieza (eq .Pieza.Estado "reacondicionado")}}selected{{end}}>Reacondicionado</option><option value="usado" {{if and .Pieza (eq .Pieza.Estado "usado")}}selected{{end}}>Usado</option></select></div>
-        <div class="col-md-3"><label class="form-label">Garantía (días)</label><input type="number" name="garantia_dias" class="form-control" value="{{if .Pieza}}{{.Pieza.GarantiaDias}}{{else}}90{{end}}"></div>
-        <div class="col-md-3"><label class="form-label">Proveedor</label><input type="text" name="proveedor" class="form-control" value="{{if .Pieza}}{{.Pieza.Proveedor}}{{end}}"></div>
-        <div class="col-md-3"><label class="form-label">Ubicación</label><input type="text" name="ubicacion" class="form-control" value="{{if .Pieza}}{{.Pieza.Ubicacion}}{{end}}" placeholder="Estante / Bodega"></div>
-        <div class="col-md-12"><label class="form-label">Imagen URL</label><input type="text" name="imagen_url" class="form-control" value="{{if .Pieza}}{{.Pieza.ImagenURL}}{{end}}"></div>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-box"></i> {{if .Pieza}}Editar{{else}}Nueva{{end}} Pieza</h4>
+  <a href="/admin/piezas" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+
+<form method="POST" action="/admin/piezas{{if .Pieza}}/{{.Pieza.ID}}{{end}}" id="piezaForm" class="needs-validation" novalidate>
+  <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+  {{if .Pieza}}<input type="hidden" name="_method" value="PUT">{{end}}
+  <input type="hidden" name="imagen_url" id="imagen_url" value="{{if .Pieza}}{{.Pieza.ImagenURL}}{{end}}">
+  <input type="hidden" name="_save_and_new" id="_save_and_new" value="0">
+
+  {{if not .Pieza}}
+  <div class="card shadow-sm mb-3">
+    <div class="card-body text-center py-3">
+      <div class="btn-group" role="group">
+        <button type="button" id="btnSimple" class="btn btn-outline-primary active" onclick="setMode('simple')"><i class="bi bi-lightning"></i> Rápido</button>
+        <button type="button" id="btnFull" class="btn btn-outline-primary" onclick="setMode('full')"><i class="bi bi-list-check"></i> Completo</button>
+      </div>
+      <small class="d-block text-muted mt-1">Modo rápido: solo lo esencial para ingresar piezas al instante</small>
     </div>
-    <div class="mt-4"><button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> {{if .Pieza}}Guardar Cambios{{else}}Crear Pieza{{end}}</button><a href="/admin/piezas" class="btn btn-outline-secondary ms-2">Cancelar</a></div>
-</form></div></div>
+  </div>
+  {{end}}
+
+  {{if .Pieza}}
+  <div class="alert alert-info py-2 small"><i class="bi bi-pencil"></i> Editando pieza <strong>{{.Pieza.Nombre}}</strong> ({{.Pieza.Codigo}})</div>
+  {{end}}
+
+  <div class="row g-3">
+    {{if .Pieza}}
+    <div class="col-12">
+      <div class="card shadow-sm"><div class="card-body">
+        <h6 class="card-title mb-3"><i class="bi bi-info-circle"></i> Información básica</h6>
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label">Nombre *</label><input type="text" name="nombre" class="form-control" value="{{.Pieza.Nombre}}" required></div>
+          <div class="col-md-3"><label class="form-label">Código *</label><input type="text" name="codigo" class="form-control" value="{{.Pieza.Codigo}}" required></div>
+          <div class="col-md-3"><label class="form-label">Categoría *</label><select name="categoria_id" class="form-select" required id="catSelect">{{range .Categorias}}<option value="{{.ID}}" {{if eq $.Pieza.CategoriaID .ID}}selected{{end}}>{{.Nombre}}</option>{{end}}</select></div>
+          <div class="col-12"><label class="form-label">Descripción</label><textarea name="descripcion" class="form-control" rows="2">{{.Pieza.Descripcion}}</textarea></div>
+        </div>
+      </div></div>
+    </div>
+    {{else}}
+    {{end}}
+
+    <div class="col-md-8">
+      <div class="card shadow-sm"><div class="card-body">
+        <h6 class="card-title mb-3"><i class="bi bi-info-circle"></i> Información básica</h6>
+        <div class="row g-3">
+          <div class="col-md-8"><label class="form-label">Nombre *</label><input type="text" name="nombre" id="nombre" class="form-control form-control-lg" value="{{if .Pieza}}{{.Pieza.Nombre}}{{end}}" required placeholder="Ej: Pantalla OLED iPhone 13" autofocus></div>
+          <div class="col-md-4"><label class="form-label">Código *</label><div class="input-group"><input type="text" name="codigo" id="codigo" class="form-control" value="{{if .Pieza}}{{.Pieza.Codigo}}{{end}}" required placeholder="P-001"><button class="btn btn-outline-secondary" type="button" onclick="autoCode()" title="Generar código automático"><i class="bi bi-arrow-repeat"></i></button></div></div>
+          <div class="col-12"><label class="form-label">Descripción</label><textarea name="descripcion" class="form-control" rows="2" placeholder="Breve descripción de la pieza...">{{if .Pieza}}{{.Pieza.Descripcion}}{{end}}</textarea></div>
+        </div>
+      </div></div>
+
+      <div class="card shadow-sm mt-3"><div class="card-body">
+        <h6 class="card-title mb-3"><i class="bi bi-tags"></i> Clasificación</h6>
+        <label class="form-label fw-medium">Categoría *</label>
+        <div class="row g-2 mb-3" id="categoriaPicker">
+          {{range $i, $c := .Categorias}}
+          <div class="col-6 col-sm-4 col-md-3">
+            <div class="cat-card{{if and $.Pieza (eq $.Pieza.CategoriaID $c.ID)}} selected{{end}}" data-cat-id="{{$c.ID}}" data-cat-name="{{$c.Nombre}}" onclick="selectCat(this)">
+              <div class="cat-icon"><i class="bi bi-{{$c.Icono}}"></i></div>
+              <div class="cat-name">{{$c.Nombre}}</div>
+            </div>
+          </div>
+          {{end}}
+        </div>
+        <input type="hidden" name="categoria_id" id="categoria_id" value="{{if .Pieza}}{{.Pieza.CategoriaID}}{{end}}" required>
+        <div class="row g-3">
+          <div class="col-md-4"><label class="form-label">Estado</label><select name="estado" class="form-select"><option value="nuevo" {{if and .Pieza (eq .Pieza.Estado "nuevo")}}selected{{end}}>Nuevo</option><option value="reacondicionado" {{if and .Pieza (eq .Pieza.Estado "reacondicionado")}}selected{{end}}>Reacondicionado</option><option value="usado" {{if and .Pieza (eq .Pieza.Estado "usado")}}selected{{end}}>Usado</option></select></div>
+          <div class="col-md-4"><label class="form-label">Garantía</label><div class="input-group"><input type="number" name="garantia_dias" class="form-control" value="{{if .Pieza}}{{.Pieza.GarantiaDias}}{{else}}90{{end}}"><span class="input-group-text">días</span></div></div>
+          <div class="col-md-4"><label class="form-label">Proveedor</label><input type="text" name="proveedor" class="form-control" value="{{if .Pieza}}{{.Pieza.Proveedor}}{{end}}" placeholder="Distribuidor"></div>
+        </div>
+      </div></div>
+
+      <div class="card shadow-sm mt-3"><div class="card-body">
+        <h6 class="card-title mb-3"><i class="bi bi-currency-dollar"></i> Precio y stock</h6>
+        <div class="row g-3">
+          <div class="col-md-4"><label class="form-label">Precio de venta *</label><div class="input-group input-group-lg"><span class="input-group-text">$</span><input type="number" name="precio" step="0.01" class="form-control" value="{{if .Pieza}}{{printf "%.2f" .Pieza.Precio}}{{end}}" required></div></div>
+          <div class="col-md-3"><label class="form-label">Costo</label><div class="input-group"><span class="input-group-text">$</span><input type="number" name="costo" step="0.01" class="form-control" value="{{if .Pieza}}{{printf "%.2f" .Pieza.Costo}}{{end}}"></div></div>
+          <div class="col-md-2"><label class="form-label">Stock</label><input type="number" name="stock" class="form-control" value="{{if .Pieza}}{{.Pieza.Stock}}{{else}}0{{end}}"></div>
+          <div class="col-md-3"><label class="form-label">Stock mínimo</label><input type="number" name="stock_minimo" class="form-control" value="{{if .Pieza}}{{.Pieza.StockMinimo}}{{else}}5{{end}}"></div>
+          <div class="col-md-6"><label class="form-label">Ubicación</label><input type="text" name="ubicacion" class="form-control" value="{{if .Pieza}}{{.Pieza.Ubicacion}}{{end}}" placeholder="Estante / Bodega"></div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm"><div class="card-body">
+        <h6 class="card-title mb-3"><i class="bi bi-camera"></i> Foto</h6>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+          <div class="upload-placeholder" id="uploadPlaceholder">
+            <i class="bi bi-cloud-arrow-up upload-icon"></i>
+            <p class="mb-1 fw-medium">Arrastra una foto aquí</p>
+            <small class="text-muted">o haz clic para seleccionar</small>
+            <small class="text-muted d-block mt-1">PNG, JPG, WebP (máx 5MB)</small>
+          </div>
+          <div class="upload-preview" id="uploadPreview" style="display:none">
+            <img id="previewImg" src="" alt="Preview">
+            <div class="upload-overlay">
+              <button type="button" class="btn btn-sm btn-light" onclick="removeImage()"><i class="bi bi-trash"></i></button>
+            </div>
+          </div>
+          <div class="upload-progress" id="uploadProgress" style="display:none">
+            <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Subiendo...</span></div>
+            <p class="mb-0 mt-2 small">Subiendo imagen...</p>
+          </div>
+          <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" onchange="uploadFile(this)">
+        </div>
+        <div id="currentImage" class="mt-2 text-center" style="{{if and .Pieza .Pieza.ImagenURL}}{{else}}display:none{{end}}">
+          <small class="text-muted">Imagen actual:</small>
+          <div class="mt-1"><img src="{{if .Pieza}}{{.Pieza.ImagenURL}}{{end}}" id="currentImg" class="img-thumbnail" style="max-height:60px"></div>
+          <button type="button" class="btn btn-sm btn-outline-danger mt-1" onclick="removeCurrentImage()"><i class="bi bi-x"></i> Quitar</button>
+        </div>
+        <div id="imageUrlField" class="mt-2" style="{{if and (not .Pieza) (not .Pieza.ImagenURL)}}display:none{{end}}">
+          <label class="form-label small">O URL directa</label>
+          <input type="text" class="form-control form-control-sm" id="imagen_url_direct" value="{{if .Pieza}}{{.Pieza.ImagenURL}}{{end}}" oninput="document.getElementById('imagen_url').value=this.value">
+        </div>
+      </div></div>
+
+      <div class="card shadow-sm mt-3" id="quickActions">
+        <div class="card-body">
+          <h6 class="card-title mb-3"><i class="bi bi-lightning"></i> Acción rápida</h6>
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-check-lg"></i> {{if .Pieza}}Guardar Cambios{{else}}Crear Pieza{{end}}</button>
+            {{if not .Pieza}}
+            <button type="button" class="btn btn-success" onclick="saveAndNew()"><i class="bi bi-plus-circle"></i> Guardar y otra</button>
+            <a href="/admin/piezas" class="btn btn-outline-secondary">Cancelar</a>
+            {{end}}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+{{if not .Pieza}}
+<script>
+// ─── Mode toggle ───
+let currentMode = 'simple';
+function setMode(m) {
+  currentMode = m;
+  document.getElementById('btnSimple').classList.toggle('active', m === 'simple');
+  document.getElementById('btnFull').classList.toggle('active', m === 'full');
+  document.querySelectorAll('.card').forEach((el,i)=>{
+    if(i===0) return; // skip mode card
+    if(m === 'simple' && i >= 4) el.style.display='none';
+    else el.style.display='';
+  });
+  document.getElementById('quickActions').style.display = '';
+}
+setTimeout(()=>setMode('simple'), 50);
+// ─── Category picker ───
+function selectCat(el) {
+  document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('categoria_id').value = el.dataset.catId;
+  if(!document.getElementById('codigo').value) autoCode();
+}
+function autoCode() {
+  const sel = document.querySelector('.cat-card.selected');
+  if(!sel) return;
+  const name = sel.dataset.catName;
+  const prefix = name.substring(0,3).toUpperCase();
+  const n = Date.now().toString().slice(-4);
+  document.getElementById('codigo').value = prefix + '-' + n;
+}
+// ─── Image upload ───
+const UPLOAD_URL = '/admin/upload';
+function uploadFile(input) {
+  const file = input.files[0];
+  if(!file) return;
+  doUpload(file);
+}
+function doUpload(file) {
+  const zone = document.getElementById('uploadZone');
+  const ph = document.getElementById('uploadPlaceholder');
+  const pv = document.getElementById('uploadPreview');
+  const pr = document.getElementById('uploadProgress');
+  ph.style.display = 'none';
+  pv.style.display = 'none';
+  pr.style.display = 'block';
+  const fd = new FormData();
+  fd.append('file', file);
+  fetch(UPLOAD_URL, {method:'POST', body:fd})
+    .then(r=>r.json())
+    .then(d=>{
+      pr.style.display = 'none';
+      if(d.error) { showToast(d.error, 'error'); ph.style.display='block'; return; }
+      document.getElementById('imagen_url').value = d.url;
+      document.getElementById('imagen_url_direct').value = d.url;
+      document.getElementById('previewImg').src = d.url;
+      document.getElementById('currentImg').src = d.url;
+      pv.style.display = 'block';
+      document.getElementById('currentImage').style.display = 'block';
+      document.getElementById('imageUrlField').style.display = 'none';
+    })
+    .catch(()=>{ pr.style.display='none'; ph.style.display='block'; showToast('Error al subir imagen','error'); });
+}
+function removeImage() {
+  document.getElementById('imagen_url').value = '';
+  document.getElementById('imagen_url_direct').value = '';
+  document.getElementById('uploadPlaceholder').style.display = '';
+  document.getElementById('uploadPreview').style.display = 'none';
+  document.getElementById('currentImage').style.display = 'none';
+}
+function removeCurrentImage() {
+  document.getElementById('imagen_url').value = '';
+  document.getElementById('imagen_url_direct').value = '';
+  document.getElementById('currentImage').style.display = 'none';
+}
+// ─── Drag & drop ───
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+zone.addEventListener('drop', e => {
+  e.preventDefault();
+  zone.classList.remove('dragover');
+  const files = e.dataTransfer.files;
+  if(files.length) doUpload(files[0]);
+});
+// ─── Save & new ───
+function saveAndNew() {
+  document.getElementById('_save_and_new').value = '1';
+  document.getElementById('piezaForm').submit();
+}
+// ─── Form validation ───
+document.getElementById('piezaForm').addEventListener('submit', function(e){
+  if(!document.getElementById('categoria_id').value) {
+    e.preventDefault();
+    showToast('Selecciona una categoría', 'error');
+  }
+});
+</script>
+{{else}}
+<script>
+document.getElementById('categoria_id').value = {{.Pieza.CategoriaID}};
+document.querySelectorAll('.cat-card').forEach(c => {
+  if(parseInt(c.dataset.catId) === {{.Pieza.CategoriaID}}) c.classList.add('selected');
+});
+</script>
+{{end}}
 {{end}}
