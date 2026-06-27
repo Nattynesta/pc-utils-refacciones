@@ -1,0 +1,78 @@
+{{define "portalContent"}}
+<div class="container py-4" style="max-width:600px">
+  {{if .Error}}
+  <div class="card shadow-sm">
+    <div class="card-body text-center py-5">
+      <div class="mb-3" style="font-size:3rem">🔍</div>
+      <h5>{{.Error}}</h5>
+      <p class="text-muted small">Verificá el código que te dieron en el taller.</p>
+    </div>
+  </div>
+  {{else}}
+  {{$r := .Rep}}
+  <div class="card shadow-sm mb-3">
+    <div class="card-body text-center">
+      <div style="font-size:2rem">{{statusEmoji $r.Status}}</div>
+      <h4 class="mb-1">Reparación #{{$r.Folio}}</h4>
+      <span class="badge fs-6 bg-{{statusColor $r.Status}}">{{statusLabel $r.Status}}</span>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-header bg-white"><i class="bi bi-info-circle"></i> Detalles del equipo</div>
+    <div class="card-body">
+      <table class="table table-sm mb-0">
+        <tr><td class="text-muted">Cliente</td><td class="fw-semibold">{{$r.ClienteNombre}}</td></tr>
+        <tr><td class="text-muted">Equipo</td><td>{{if $r.MarcaNombre}}{{$r.MarcaNombre}} {{end}}{{$r.ModeloTexto}}</td></tr>
+        <tr><td class="text-muted">Falla reportada</td><td>{{$r.FallaReportada}}</td></tr>
+        {{if $r.Diagnostico}}<tr><td class="text-muted">Diagnóstico</td><td>{{$r.Diagnostico}}</td></tr>{{end}}
+        {{if $r.NotasCliente}}<tr><td class="text-muted">Notas</td><td>{{$r.NotasCliente}}</td></tr>{{end}}
+        <tr><td class="text-muted">Ingreso</td><td>{{$r.FechaIngreso}}</td></tr>
+        {{if $r.FechaPrometida}}<tr><td class="text-muted">Fecha prometida</td><td>{{$r.FechaPrometida}}</td></tr>{{end}}
+        {{if $r.FechaEntrega}}<tr><td class="text-muted">Entregado</td><td>{{$r.FechaEntrega}}</td></tr>{{end}}
+      </table>
+    </div>
+  </div>
+
+  {{if $r.Historial}}
+  <div class="card shadow-sm mb-3">
+    <div class="card-header bg-white"><i class="bi bi-clock-history"></i> Historial</div>
+    <div class="card-body p-0">
+      <div class="list-group list-group-flush">
+        {{range $h := $r.Historial}}
+        <div class="list-group-item">
+          <div class="d-flex justify-content-between">
+            <span>{{statusEmoji $h.StatusNuevo}} <strong>{{statusLabel $h.StatusNuevo}}</strong></span>
+            <small class="text-muted">{{$h.CreadoEn}}</small>
+          </div>
+          {{if $h.Notas}}<small class="d-block text-muted mt-1">{{$h.Notas}}</small>{{end}}
+        </div>
+        {{end}}
+      </div>
+    </div>
+  </div>
+  {{end}}
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-header bg-white"><i class="bi bi-qr-code"></i> Compartí tu código QR</div>
+    <div class="card-body text-center">
+      <div id="qrcode" class="d-inline-block mb-2"></div>
+      <div class="text-muted small">Mostrá este código o compartí el enlace para que tus clientes vean el progreso.</div>
+    </div>
+  </div>
+
+  <div class="d-grid gap-2">
+    {{if .Telefono}}
+    <a href="https://wa.me/{{.Telefono}}" target="_blank" class="btn btn-success"><i class="bi bi-whatsapp"></i> Consultar por WhatsApp</a>
+    {{end}}
+    <a href="/" class="btn btn-outline-secondary"><i class="bi bi-house"></i> Ir al inicio</a>
+  </div>
+  {{end}}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+const qrEl = document.getElementById('qrcode');
+if(qrEl) new QRCode(qrEl,{text:window.location.href,width:160,height:160,colorDark:'#2D3436',correctLevel:QRCode.CorrectLevel.H});
+</script>
+{{end}}

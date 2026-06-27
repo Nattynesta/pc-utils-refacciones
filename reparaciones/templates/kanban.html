@@ -1,0 +1,43 @@
+{{define "content"}}
+<div class="kanban-scroll">
+  <div class="d-flex gap-2" style="min-width:max-content">
+    {{range $s := $.StatusSequence}}
+    <div class="kanban-col">
+      <div class="kanban-header" style="background:{{if eq $s "recibido"}}var(--blue){{else if eq $s "diagnosticando"}}var(--orange){{else if eq $s "presupuestado"}}var(--gray){{else if eq $s "aprobado"}}var(--teal){{else if eq $s "reparando"}}var(--purple){{else if eq $s "reparado"}}var(--green){{else}}var(--teal){{end}}">
+        <span>{{statusEmoji $s}} {{statusLabel $s}}</span>
+        <span class="kanban-count">{{len (index $.Data $s)}}</span>
+      </div>
+      <div class="kanban-body">
+        {{if (index $.Data $s)}}{{range $r := index $.Data $s}}
+        <div class="kanban-card">
+          <div class="d-flex justify-content-between">
+            <strong>#{{$r.Folio}}</strong>
+            <small class="text-muted"><i class="bi bi-{{tipoIcon $r.TipoEquipo}}"></i></small>
+          </div>
+          <div class="fw-semibold small">{{$r.ClienteNombre}}</div>
+          <div class="small text-muted">{{$r.MarcaNombre}} {{$r.ModeloTexto}}</div>
+          <div class="small text-muted">{{$r.FechaIngreso}}</div>
+          <div class="mt-1 d-flex gap-1">
+            <a href="/reparacion/{{$r.ID}}" class="btn btn-sm btn-outline-primary py-0 px-1"><i class="bi bi-eye"></i></a>
+            <select class="form-select form-select-sm" style="width:auto;font-size:0.7rem" onchange="cambiarStatus({{$r.ID}},this.value)">
+              <option value="">Mover a...</option>
+              <option value="recibido">📥 Recibido</option>
+              <option value="diagnosticando">🔍 Diagnosticando</option>
+              <option value="presupuestado">💰 Presupuestado</option>
+              <option value="aprobado">✅ Aprobado</option>
+              <option value="reparando">🔧 Reparando</option>
+              <option value="reparado">✨ Reparado</option>
+              <option value="entregado">📦 Entregado</option>
+              <option value="cancelado">❌ Cancelado</option>
+            </select>
+          </div>
+        </div>
+        {{end}}{{else}}
+        <div class="text-center text-muted small py-4">—</div>
+        {{end}}
+      </div>
+    </div>
+    {{end}}
+  </div>
+</div>
+{{end}}

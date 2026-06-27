@@ -1,0 +1,201 @@
+{{define "content"}}
+{{$r := .Rep}}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <div>
+    <a href="/" class="btn btn-outline-secondary btn-sm me-2"><i class="bi bi-arrow-left"></i></a>
+    <span class="fs-5 fw-semibold"><span class="status-badge status-{{$r.Status}}">{{statusEmoji $r.Status}} {{statusLabel $r.Status}}</span> #{{$r.Folio}} — {{$r.ClienteNombre}}</span>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-success btn-sm" onclick="window.open(window.location.origin+'/r/{{$r.Token}}','_blank')"><i class="bi bi-link-45deg"></i> Portal</button>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-8">
+    {{if $r.Historial}}
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-clock-history"></i> Historial</div>
+      <div class="card-body">
+        <div class="timeline">
+          {{range $h := $r.Historial}}
+          <div class="tl-item">
+            <div class="tl-dot tl-{{$h.StatusNuevo}}"></div>
+            <div class="tl-content">
+              <div class="d-flex justify-content-between">
+                <span class="fw-semibold">{{statusEmoji $h.StatusNuevo}} {{statusLabel $h.StatusNuevo}}</span>
+                <small class="text-muted">{{$h.CreadoEn}}</small>
+              </div>
+              {{if $h.Notas}}<small class="d-block text-muted mt-1">{{$h.Notas}}</small>{{end}}
+              {{if $h.UsuarioNombre}}<small class="text-muted d-block">— {{$h.UsuarioNombre}}</small>{{end}}
+            </div>
+          </div>
+          {{end}}
+        </div>
+      </div>
+    </div>
+    {{end}}
+
+    <!-- Edit form -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-pencil"></i> Editar</div>
+      <div class="card-body">
+        <form method="POST" action="/reparacion/{{$r.ID}}/editar">
+          <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+          <div class="row g-2">
+            <div class="col-md-6"><label class="form-label small">Cliente</label><input type="text" name="cliente_nombre" class="form-control" value="{{$r.ClienteNombre}}"></div>
+            <div class="col-md-3"><label class="form-label small">Teléfono</label><input type="text" name="cliente_telefono" class="form-control" value="{{$r.ClienteTelefono}}"></div>
+            <div class="col-md-3"><label class="form-label small">Email</label><input type="email" name="cliente_email" class="form-control" value="{{$r.ClienteEmail}}"></div>
+            <div class="col-md-4"><label class="form-label small">Modelo</label><input type="text" name="modelo_texto" class="form-control" value="{{$r.ModeloTexto}}"></div>
+            <div class="col-md-3"><label class="form-label small">Serie</label><input type="text" name="numero_serie" class="form-control" value="{{$r.NumeroSerie}}"></div>
+            <div class="col-md-2"><label class="form-label small">IMEI</label><input type="text" name="imei" class="form-control" value="{{$r.IMEI}}"></div>
+            <div class="col-md-3"><label class="form-label small">Password</label><input type="text" name="password_equipo" class="form-control" value="{{$r.PasswordEquipo}}"></div>
+            <div class="col-md-6"><label class="form-label small">Condición física</label><input type="text" name="condicion_fisica" class="form-control" value="{{$r.CondicionFisica}}"></div>
+            <div class="col-md-6"><label class="form-label small">Accesorios</label><input type="text" name="accesorios" class="form-control" value="{{$r.Accesorios}}"></div>
+            <div class="col-12"><label class="form-label small">Falla reportada</label><textarea name="falla_reportada" class="form-control" rows="2">{{$r.FallaReportada}}</textarea></div>
+            <div class="col-12"><label class="form-label small">Diagnóstico</label><textarea name="diagnostico" class="form-control" rows="2">{{$r.Diagnostico}}</textarea></div>
+            <div class="col-md-6"><label class="form-label small">Notas cliente</label><textarea name="notas_cliente" class="form-control" rows="2">{{$r.NotasCliente}}</textarea></div>
+            <div class="col-md-6"><label class="form-label small">Notas internas</label><textarea name="notas_internas" class="form-control" rows="2">{{$r.NotasInternas}}</textarea></div>
+            <div class="col-md-4"><label class="form-label small">Fecha prometida</label><input type="date" name="fecha_prometida" class="form-control" value="{{$r.FechaPrometida}}"></div>
+            <div class="col-md-4"><label class="form-label small">Costo diagnóstico</label><div class="input-group input-group-sm"><span class="input-group-text">$</span><input type="number" name="costo_diagnostico" step="0.01" class="form-control" value="{{printf "%.2f" $r.CostoDiagnostico}}"></div></div>
+            <div class="col-md-4"><label class="form-label small">Anticipo</label><div class="input-group input-group-sm"><span class="input-group-text">$</span><input type="number" name="anticipo" step="0.01" class="form-control" value="{{printf "%.2f" $r.Anticipo}}"></div></div>
+            <div class="col-12"><button class="btn btn-primary btn-sm"><i class="bi bi-save"></i> Guardar</button></div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Status buttons -->
+    <div class="card">
+      <div class="card-header"><i class="bi bi-arrow-right"></i> Cambiar status</div>
+      <div class="card-body">
+        <div class="d-flex gap-2 flex-wrap">
+          {{range $s := $.StatusSequence}}
+          <button class="btn btn-sm btn-outline-{{statusColor $s}} {{if eq $s $r.Status}}active disabled{{end}}" onclick="cambiarStatus({{$r.ID}},'{{$s}}')">{{statusEmoji $s}} {{statusLabel $s}}</button>
+          {{end}}
+          <button class="btn btn-sm btn-outline-danger" onclick="if(confirm('¿Cancelar?'))cambiarStatus({{$r.ID}},'cancelado')">❌ Cancelado</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <!-- Totals -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-cash"></i> Totales</div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between"><span>Diagnóstico:</span><strong>${{printf "%.2f" $r.CostoDiagnostico}}</strong></div>
+        <div class="d-flex justify-content-between"><span>Reparación:</span><strong>${{printf "%.2f" $r.CostoReparacion}}</strong></div>
+        <div class="d-flex justify-content-between"><span>Anticipo:</span><strong>${{printf "%.2f" $r.Anticipo}}</strong></div>
+        <hr class="my-1">
+        <div class="d-flex justify-content-between fs-5"><span>Total:</span><strong class="text-success">${{printf "%.2f" $r.Total}}</strong></div>
+      </div>
+    </div>
+
+    <!-- QR -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-qr-code"></i> Portal cliente</div>
+      <div class="card-body text-center">
+        <div id="qrcode" class="d-inline-block mb-2"></div>
+        <div><input type="text" id="pubUrl" class="form-control form-control-sm text-center" readonly onclick="this.select()"></div>
+        <a href="/r/{{$r.Token}}" target="_blank" class="btn btn-sm btn-outline-primary mt-2"><i class="bi bi-box-arrow-up-right"></i> Abrir</a>
+      </div>
+    </div>
+
+    <!-- Pieces used -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-box"></i> Piezas usadas</div>
+      <div class="card-body">
+        {{if $r.PiezasUsadas}}
+        <table class="table table-sm small mb-2">
+          <tr><th>Pieza</th><th>Cant</th><th>$</th><th></th></tr>
+          {{range $p := $r.PiezasUsadas}}
+          <tr>
+            <td>{{$p.PiezaNombre}} <small class="text-muted">({{$p.PiezaCodigo}})</small></td>
+            <td>{{$p.Cantidad}}</td>
+            <td>${{printf "%.0f" $p.Subtotal}}</td>
+            <td><button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="quitarPieza({{$r.ID}},{{$p.ID}})"><i class="bi bi-x"></i></button></td>
+          </tr>
+          {{end}}
+        </table>
+        {{else}}<small class="text-muted">Sin piezas</small>{{end}}
+        <hr class="my-2">
+        <form onsubmit="agregarPieza(event,{{$r.ID}})">
+          <div class="input-group input-group-sm">
+            <select class="form-select" id="pSel"><option value="">+ Pieza...</option>
+            {{range $.Piezas}}<option value="{{.ID}}">{{.Nombre}} ({{.Codigo}}) ${{printf "%.0f" .Precio}} S:{{.Stock}}</option>{{end}}
+            </select>
+            <input type="number" id="pCant" class="form-control" style="width:50px" value="1" min="1">
+            <button class="btn btn-outline-primary" type="submit"><i class="bi bi-plus"></i></button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Files -->
+    <div class="card">
+      <div class="card-header"><i class="bi bi-paperclip"></i> Archivos</div>
+      <div class="card-body">
+        {{if $r.Archivos}}
+        <div class="d-flex flex-wrap gap-2 mb-2">
+          {{range $a := $r.Archivos}}
+          <div style="position:relative">
+            {{if eq $a.Tipo "pdf"}}
+            <a href="{{$a.URL}}" target="_blank" class="btn btn-sm btn-outline-danger"><i class="bi bi-file-pdf"></i></a>
+            {{else}}
+            <a href="{{$a.URL}}" target="_blank"><img src="{{$a.URL}}" style="width:56px;height:56px;object-fit:cover;border-radius:8px"></a>
+            {{end}}
+            <button class="btn btn-sm btn-outline-danger py-0 px-1" style="position:absolute;top:-4px;right:-4px;font-size:0.6rem" onclick="quitarArchivo({{$r.ID}},{{$a.ID}})"><i class="bi bi-x"></i></button>
+          </div>
+          {{end}}
+        </div>
+        {{end}}
+        <form onsubmit="subirArchivo(event,{{$r.ID}})">
+          <div class="input-group input-group-sm">
+            <input type="file" class="form-control" id="fInput" accept="image/*,.pdf">
+            <button class="btn btn-outline-primary"><i class="bi bi-upload"></i></button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+const origin = window.location.origin;
+document.getElementById('pubUrl').value = origin + '/r/{{$r.Token}}';
+new QRCode(document.getElementById('qrcode'),{text:origin+'/r/{{$r.Token}}',width:130,height:130,colorDark:'#2D3436',correctLevel:QRCode.CorrectLevel.M || 'M'});
+
+function cambiarStatus(id, s) {
+  const fd = new FormData(); fd.append('status', s);
+  fetch('/reparacion/'+id+'/status', {method:'POST', body:fd})
+  .then(r=>r.json()).then(d=>{ if(d.success) location.reload(); else alert(d.error); });
+}
+function agregarPieza(e, id) {
+  e.preventDefault();
+  const sel = document.getElementById('pSel'); const cant = document.getElementById('pCant');
+  if(!sel.value) return;
+  const fd = new FormData(); fd.append('pieza_id', sel.value); fd.append('cantidad', cant.value||1);
+  fetch('/reparacion/'+id+'/piezas', {method:'POST', body:fd})
+  .then(r=>r.json()).then(d=>{ if(d.success) location.reload(); else alert(d.error); });
+}
+function quitarPieza(id, pid) {
+  if(!confirm('¿Quitar pieza?')) return;
+  fetch('/reparacion/'+id+'/piezas/'+pid, {method:'DELETE'})
+  .then(r=>r.json()).then(d=>{ if(d.success) location.reload(); });
+}
+function subirArchivo(e, id) {
+  e.preventDefault();
+  const inp = document.getElementById('fInput');
+  if(!inp.files.length) return;
+  const fd = new FormData(); fd.append('file', inp.files[0]);
+  fetch('/reparacion/'+id+'/archivos', {method:'POST', body:fd})
+  .then(r=>r.json()).then(d=>{ if(d.success) location.reload(); else alert(d.error); });
+}
+function quitarArchivo(id, aid) {
+  if(!confirm('¿Eliminar archivo?')) return;
+  fetch('/reparacion/'+id+'/archivos/'+aid, {method:'DELETE'})
+  .then(r=>r.json()).then(d=>{ if(d.success) location.reload(); });
+}
+</script>
+{{end}}

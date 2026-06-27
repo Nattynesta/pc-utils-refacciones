@@ -1,0 +1,118 @@
+{{define "content"}}
+<div class="card">
+  <div class="card-header"><i class="bi bi-plus-circle"></i> Nuevo ingreso</div>
+  <div class="card-body">
+    <form method="POST" action="/nueva">
+      <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+      <input type="hidden" name="_save_and_new" id="sn" value="0">
+
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="form-label fw-semibold">Tipo de equipo</label>
+          <div class="d-flex gap-2 flex-wrap" id="tipoPicker">
+            <div class="tipo-option" data-tipo="laptop" onclick="selectTipo(this)">💻 Laptop</div>
+            <div class="tipo-option" data-tipo="pc" onclick="selectTipo(this)">🖥️ PC</div>
+            <div class="tipo-option" data-tipo="celular" onclick="selectTipo(this)">📱 Celular</div>
+            <div class="tipo-option" data-tipo="audio" onclick="selectTipo(this)">🔊 Audio</div>
+            <div class="tipo-option" data-tipo="otro" onclick="selectTipo(this)">📦 Otro</div>
+          </div>
+          <input type="hidden" name="tipo_equipo" id="tipo_equipo" required>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Cliente *</label>
+          <input type="text" name="cliente_nombre" class="form-control form-control-lg" required placeholder="Nombre completo" autofocus>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Teléfono</label>
+          <input type="text" name="cliente_telefono" class="form-control" placeholder="55 1234 5678">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Email</label>
+          <input type="email" name="cliente_email" class="form-control" placeholder="cliente@email.com">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Marca</label>
+          <select name="marca_id" class="form-select">
+            <option value="">—</option>
+            {{range .Marcas}}<option value="{{.ID}}">{{.Nombre}}</option>{{end}}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Modelo</label>
+          <input type="text" name="modelo_texto" class="form-control" placeholder="Ej: ThinkPad X1 Carbon">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">N° de serie</label>
+          <input type="text" name="numero_serie" class="form-control" placeholder="S/N">
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">IMEI</label>
+          <input type="text" name="imei" class="form-control" placeholder="Solo celulares">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Password</label>
+          <input type="text" name="password_equipo" class="form-control" placeholder="PIN / BIOS">
+        </div>
+        <div class="col-md-5">
+          <label class="form-label">Condición física</label>
+          <input type="text" name="condicion_fisica" class="form-control" placeholder="Rayones, golpes, etc.">
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Falla reportada *</label>
+          <textarea name="falla_reportada" class="form-control" rows="3" required placeholder="¿Qué problema tiene el equipo? Sé específico..."></textarea>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Diagnóstico inicial</label>
+          <textarea name="diagnostico" class="form-control" rows="2" placeholder="Hallazgos preliminares"></textarea>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Accesorios recibidos</label>
+          <input type="text" name="accesorios" class="form-control" placeholder="Cargador, funda, audífonos...">
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Notas para el cliente</label>
+          <textarea name="notas_cliente" class="form-control" rows="2" placeholder="Visible en el portal del cliente"></textarea>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Notas internas</label>
+          <textarea name="notas_internas" class="form-control" rows="2" placeholder="Solo visible para el taller"></textarea>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Fecha prometida</label>
+          <input type="date" name="fecha_prometida" class="form-control">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Costo diagnóstico</label>
+          <div class="input-group"><span class="input-group-text">$</span><input type="number" name="costo_diagnostico" step="0.01" class="form-control" value="0"></div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Anticipo</label>
+          <div class="input-group"><span class="input-group-text">$</span><input type="number" name="anticipo" step="0.01" class="form-control" value="0"></div>
+        </div>
+      </div>
+
+      <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-check-lg"></i> Registrar ingreso</button>
+        <button type="button" class="btn btn-success btn-lg" onclick="document.getElementById('sn').value='1';this.form.submit()"><i class="bi bi-plus-circle"></i> Guardar y otra</button>
+        <a href="/" class="btn btn-outline-secondary btn-lg">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+function selectTipo(el) {
+  document.querySelectorAll('.tipo-option').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('tipo_equipo').value = el.dataset.tipo;
+}
+document.querySelector('form').addEventListener('submit',function(e){
+  if(!document.getElementById('tipo_equipo').value){e.preventDefault();alert('Seleccioná el tipo de equipo');}
+});
+</script>
+{{end}}

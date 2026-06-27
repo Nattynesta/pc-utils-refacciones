@@ -1,0 +1,91 @@
+{{define "content"}}
+{{if .Stats}}
+<div class="stats-grid mb-4">
+  <div class="stat-card stat-primary">
+    <div class="stat-icon">📥</div>
+    <div class="stat-num">{{.Stats.HoyRecibidos}}</div>
+    <div class="stat-label">Recibidos hoy</div>
+  </div>
+  <div class="stat-card stat-warning">
+    <div class="stat-icon">🔧</div>
+    <div class="stat-num">{{.Stats.EnProceso}}</div>
+    <div class="stat-label">En proceso</div>
+  </div>
+  <div class="stat-card stat-secondary">
+    <div class="stat-icon">💰</div>
+    <div class="stat-num">{{.Stats.EsperaAprobacion}}</div>
+    <div class="stat-label">Espera aprobación</div>
+  </div>
+  <div class="stat-card stat-success">
+    <div class="stat-icon">✨</div>
+    <div class="stat-num">{{.Stats.ListosEntrega}}</div>
+    <div class="stat-label">Listos para entregar</div>
+  </div>
+  <div class="stat-card stat-danger">
+    <div class="stat-icon">⚠️</div>
+    <div class="stat-num">{{.Stats.Atrasados}}</div>
+    <div class="stat-label">Atrasados</div>
+  </div>
+  <div class="stat-card stat-info">
+    <div class="stat-icon">📊</div>
+    <div class="stat-num">${{printf "%.0f" .Stats.ValorPendiente}}</div>
+    <div class="stat-label">Valor pendiente</div>
+  </div>
+</div>
+{{end}}
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-list"></i> Reparaciones activas</span>
+    <a href="/nueva" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg"></i> Nuevo ingreso</a>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" id="repTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Cliente</th>
+            <th>Equipo</th>
+            <th>Falla</th>
+            <th>Ingreso</th>
+            <th>Status</th>
+            <th>Días</th>
+            <th>$</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {{if .Rows}}{{range .Rows}}<tr>
+            <td class="fw-bold">{{.Folio}}</td>
+            <td>
+              <strong>{{.ClienteNombre}}</strong>
+              {{if .ClienteTelefono}}<br><small class="text-muted">{{.ClienteTelefono}}</small>{{end}}
+            </td>
+            <td><small>{{if .MarcaNombre}}{{.MarcaNombre}} {{end}}{{.ModeloTexto}}</small></td>
+            <td><small class="text-muted">{{truncate .FallaReportada 35}}</small></td>
+            <td><small class="text-muted">{{.FechaIngreso}}</small></td>
+            <td>
+              <select class="status-select" onchange="cambiarStatus({{.ID}},this.value)">
+                <option value="recibido" {{if eq .Status "recibido"}}selected{{end}}>📥 Recibido</option>
+                <option value="diagnosticando" {{if eq .Status "diagnosticando"}}selected{{end}}>🔍 Diagnosticando</option>
+                <option value="presupuestado" {{if eq .Status "presupuestado"}}selected{{end}}>💰 Presupuestado</option>
+                <option value="aprobado" {{if eq .Status "aprobado"}}selected{{end}}>✅ Aprobado</option>
+                <option value="reparando" {{if eq .Status "reparando"}}selected{{end}}>🔧 Reparando</option>
+                <option value="reparado" {{if eq .Status "reparado"}}selected{{end}}>✨ Reparado</option>
+                <option value="entregado" {{if eq .Status "entregado"}}selected{{end}}>📦 Entregado</option>
+                <option value="cancelado" {{if eq .Status "cancelado"}}selected{{end}}>❌ Cancelado</option>
+              </select>
+            </td>
+            <td><span class="badge {{if gt .DiasEnStatus 7}}bg-danger{{else if gt .DiasEnStatus 3}}bg-warning{{else}}bg-light text-dark{{end}}">{{.DiasEnStatus}}d</span></td>
+            <td>{{if gt .Total 0.0}}${{printf "%.0f" .Total}}{{end}}</td>
+            <td><a href="/reparacion/{{.ID}}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a></td>
+          </tr>{{end}}{{else}}
+          <tr><td colspan="9" class="text-center py-4 text-muted">Sin reparaciones activas</td></tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{{end}}

@@ -1,0 +1,113 @@
+:root {
+  --sidebar-width: 220px;
+  --blue: #3498db;
+  --orange: #e67e22;
+  --gray: #95a5a6;
+  --teal: #1abc9c;
+  --purple: #9b59b6;
+  --green: #27ae60;
+  --red: #e74c3c;
+}
+
+body { background: #f0f2f5; font-family: system-ui, -apple-system, sans-serif; font-size: .875rem; }
+
+/* Sidebar */
+.sidebar { width: var(--sidebar-width); min-height: 100vh; background: #2c3e50; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; }
+.sidebar-header { padding: 1rem .75rem; border-bottom: 1px solid rgba(255,255,255,.1); }
+.sidebar .nav-link { color: rgba(255,255,255,.6); padding: .5rem .75rem; border-radius: 6px; margin: 0 .5rem; font-size: .85rem; }
+.sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background: rgba(255,255,255,.1); }
+.sidebar-footer { margin-top: auto; padding: .75rem; border-top: 1px solid rgba(255,255,255,.1); }
+
+/* Main */
+.main-content { flex: 1; min-width: 0; }
+.topbar { display: flex; align-items: center; padding: .75rem 1rem; background: #fff; border-bottom: 1px solid #e9ecef; }
+
+/* Stats grid */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: .75rem; }
+.stat-card { background: #fff; border-radius: 10px; padding: .75rem; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.stat-icon { font-size: 1.5rem; margin-bottom: .25rem; }
+.stat-num { font-size: 1.6rem; font-weight: 700; line-height: 1.2; }
+.stat-label { font-size: .7rem; color: #6c757d; text-transform: uppercase; letter-spacing: .03em; }
+.stat-primary .stat-num { color: var(--blue); }
+.stat-warning .stat-num { color: var(--orange); }
+.stat-secondary .stat-num { color: var(--gray); }
+.stat-success .stat-num { color: var(--green); }
+.stat-danger .stat-num { color: var(--red); }
+.stat-info .stat-num { color: var(--teal); }
+
+/* Cards */
+.card { border: none; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.08); overflow: hidden; }
+.card-header { background: #fff; font-weight: 600; border-bottom: 1px solid #f0f0f0; padding: .65rem 1rem; }
+.card-body { padding: 1rem; }
+
+/* Table */
+.table th { font-weight: 600; font-size: .75rem; text-transform: uppercase; letter-spacing: .03em; color: #6c757d; border-bottom: 2px solid #f0f0f0; }
+.table td { vertical-align: middle; }
+
+/* Status select */
+.status-select { border: none; background: transparent; font-size: .85rem; padding: .15rem .25rem; cursor: pointer; }
+.status-select:focus { outline: none; }
+.status-select option { font-size: .8rem; }
+
+/* Badge */
+.badge { font-weight: 500; }
+
+/* Status badge */
+.status-badge { display: inline-block; padding: .25rem .6rem; border-radius: 20px; font-size: .85rem; background: #e9ecef; }
+.status-badge.status-recibido { background: #d4edda; color: #155724; }
+.status-badge.status-diagnosticando { background: #fff3cd; color: #856404; }
+.status-badge.status-presupuestado { background: #e2e3e5; color: #383d41; }
+.status-badge.status-aprobado { background: #d1ecf1; color: #0c5460; }
+.status-badge.status-reparando { background: #e8daef; color: #6c3483; }
+.status-badge.status-reparado { background: #d5f5e3; color: #1e8449; }
+.status-badge.status-entregado { background: #d5f5e3; color: #1e8449; }
+.status-badge.status-cancelado { background: #f5b7b1; color: #922b21; }
+
+/* Kanban */
+.kanban-scroll { overflow-x: auto; padding-bottom: 1rem; }
+.kanban-col { min-width: 220px; max-width: 260px; background: #f8f9fa; border-radius: 10px; overflow: hidden; }
+.kanban-header { padding: .5rem .75rem; color: #fff; font-weight: 600; display: flex; justify-content: space-between; align-items: center; font-size: .85rem; }
+.kanban-count { background: rgba(255,255,255,.3); border-radius: 10px; padding: 0 8px; font-size: .8rem; }
+.kanban-body { padding: .5rem; min-height: 200px; }
+.kanban-card { background: #fff; border-radius: 8px; padding: .5rem; margin-bottom: .5rem; box-shadow: 0 1px 2px rgba(0,0,0,.08); font-size: .82rem; }
+
+/* Timeline */
+.timeline { position: relative; padding-left: 1.5rem; }
+.timeline::before { content: ''; position: absolute; left: 6px; top: 0; bottom: 0; width: 2px; background: #e9ecef; }
+.tl-item { position: relative; margin-bottom: 1rem; }
+.tl-dot { position: absolute; left: -1.25rem; top: .25rem; width: 14px; height: 14px; border-radius: 50%; background: #dee2e6; border: 2px solid #fff; z-index: 1; }
+.tl-dot.tl-recibido { background: #28a745; }
+.tl-dot.tl-diagnosticando { background: #ffc107; }
+.tl-dot.tl-presupuestado { background: #6c757d; }
+.tl-dot.tl-aprobado { background: #17a2b8; }
+.tl-dot.tl-reparando { background: #6f42c1; }
+.tl-dot.tl-reparado { background: #28a745; }
+.tl-dot.tl-entregado { background: #28a745; }
+.tl-dot.tl-cancelado { background: #dc3545; }
+.tl-content { background: #fff; border-radius: 8px; padding: .5rem .75rem; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+
+/* Tipo picker */
+.tipo-option { padding: .5rem 1rem; border: 2px solid #dee2e6; border-radius: 10px; cursor: pointer; font-size: .9rem; transition: all .15s; }
+.tipo-option:hover { border-color: #3498db; background: #ebf5fb; }
+.tipo-option.selected { border-color: #3498db; background: #3498db; color: #fff; }
+
+/* Login */
+.login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%); }
+
+/* Drag-drop */
+.upload-zone { border: 2px dashed #dee2e6; border-radius: 10px; padding: 2rem; text-align: center; cursor: pointer; transition: all .2s; }
+.upload-zone:hover, .upload-zone.dragover { border-color: #3498db; background: #ebf5fb; }
+
+/* Toast */
+.toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 9999; }
+.toast-msg { background: #333; color: #fff; padding: .5rem 1rem; border-radius: 8px; margin-bottom: .5rem; animation: fadeIn .3s; font-size: .9rem; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Responsive */
+@media (max-width:768px) {
+  .sidebar { width: 60px; }
+  .sidebar .nav-link span, .sidebar-header h5, .sidebar-header small, .sidebar-footer { display: none; }
+  .sidebar .nav-link { text-align: center; padding: .5rem; margin: 0 .25rem; }
+  .sidebar .nav-link i { font-size: 1.2rem; }
+  .stats-grid { grid-template-columns: repeat(2,1fr); }
+}
