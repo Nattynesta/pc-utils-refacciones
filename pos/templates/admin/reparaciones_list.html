@@ -1,0 +1,92 @@
+{{define "title"}}Reparaciones — RefacCel Admin{{end}}
+{{define "adminContent"}}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-tools"></i> Reparaciones</h4>
+  <div class="d-flex gap-2">
+    <a href="/admin/reparaciones/kanban" class="btn btn-outline-primary"><i class="bi bi-columns"></i> Kanban</a>
+    <a href="/admin/reparaciones/nueva" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Nueva</a>
+  </div>
+</div>
+
+{{if .ReparacionStats}}
+<div class="row g-2 mb-3">
+  <div class="col"><div class="card shadow-sm stats-card"><div class="card-body py-2 px-3 d-flex align-items-center gap-2"><span class="badge bg-primary rounded-circle p-2"><i class="bi bi-box-seam"></i></span><div><small class="text-muted d-block lh-1">Hoy</small><strong>{{.ReparacionStats.HoyRecibidos}}</strong></div></div></div></div>
+  <div class="col"><div class="card shadow-sm stats-card"><div class="card-body py-2 px-3 d-flex align-items-center gap-2"><span class="badge bg-warning rounded-circle p-2"><i class="bi bi-search"></i></span><div><small class="text-muted d-block lh-1">En proceso</small><strong>{{.ReparacionStats.EnProceso}}</strong></div></div></div></div>
+  <div class="col"><div class="card shadow-sm stats-card"><div class="card-body py-2 px-3 d-flex align-items-center gap-2"><span class="badge bg-secondary rounded-circle p-2"><i class="bi bi-cash-coin"></i></span><div><small class="text-muted d-block lh-1">Espera aprob.</small><strong>{{.ReparacionStats.EsperaAprobacion}}</strong></div></div></div></div>
+  <div class="col"><div class="card shadow-sm stats-card"><div class="card-body py-2 px-3 d-flex align-items-center gap-2"><span class="badge bg-success rounded-circle p-2"><i class="bi bi-check2-all"></i></span><div><small class="text-muted d-block lh-1">Listos</small><strong>{{.ReparacionStats.ListosEntrega}}</strong></div></div></div></div>
+  <div class="col"><div class="card shadow-sm stats-card"><div class="card-body py-2 px-3 d-flex align-items-center gap-2"><span class="badge bg-danger rounded-circle p-2"><i class="bi bi-exclamation-triangle"></i></span><div><small class="text-muted d-block lh-1">Atrasados</small><strong>{{.ReparacionStats.Atrasados}}</strong></div></div></div></div>
+  <div class="col"><div class="card shadow-sm stats-card"><div class="card-body py-2 px-3 d-flex align-items-center gap-2"><span class="badge bg-info rounded-circle p-2"><i class="bi bi-list"></i></span><div><small class="text-muted d-block lh-1">Activos</small><strong>{{.ReparacionStats.TotalActivos}}</strong></div></div></div></div>
+</div>
+{{end}}
+
+<div class="card shadow-sm"><div class="card-body">
+  <div class="row g-2 mb-3">
+    <div class="col-md-4">
+      <input type="text" id="repSearch" class="form-control" placeholder="Buscar cliente, equipo, falla, serie..." value="{{.Query}}">
+    </div>
+    <div class="col-md-2">
+      <select id="repStatusFilter" class="form-select" onchange="location='?s='+this.value">
+        <option value="todas" {{if eq .ReparacionStatus "todas"}}selected{{end}}>Todas</option>
+        <option value="recibido" {{if eq .ReparacionStatus "recibido"}}selected{{end}}>Recibido</option>
+        <option value="diagnosticando" {{if eq .ReparacionStatus "diagnosticando"}}selected{{end}}>Diagnosticando</option>
+        <option value="presupuestado" {{if eq .ReparacionStatus "presupuestado"}}selected{{end}}>Presupuestado</option>
+        <option value="aprobado" {{if eq .ReparacionStatus "aprobado"}}selected{{end}}>Aprobado</option>
+        <option value="reparando" {{if eq .ReparacionStatus "reparando"}}selected{{end}}>Reparando</option>
+        <option value="reparado" {{if eq .ReparacionStatus "reparado"}}selected{{end}}>Reparado</option>
+        <option value="entregado" {{if eq .ReparacionStatus "entregado"}}selected{{end}}>Entregado</option>
+        <option value="cancelado" {{if eq .ReparacionStatus "cancelado"}}selected{{end}}>Cancelado</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select class="form-select" onchange="location='?f='+this.value">
+        <option value="">Sin filtro</option>
+        <option value="hoy" {{if eq .ReparacionFilter "hoy"}}selected{{end}}>Recibidos hoy</option>
+        <option value="proceso" {{if eq .ReparacionFilter "proceso"}}selected{{end}}>En proceso</option>
+        <option value="listos" {{if eq .ReparacionFilter "listos"}}selected{{end}}>Listos para entregar</option>
+        <option value="atrasados" {{if eq .ReparacionFilter "atrasados"}}selected{{end}}>Atrasados (+7 días)</option>
+      </select>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover" id="repTable">
+      <thead><tr>
+        <th>#</th><th>Cliente</th><th>Equipo</th><th>Falla</th><th>Ingreso</th><th>Status</th><th>Total</th><th></th>
+      </tr></thead>
+      <tbody>
+        {{if .Reparaciones}}{{range .Reparaciones}}<tr class="rep-row" data-status="{{.Status}}">
+          <td class="fw-bold">{{.Folio}}</td>
+          <td>
+            <strong>{{.ClienteNombre}}</strong>
+            {{if .ClienteTelefono}}<br><small class="text-muted">{{.ClienteTelefono}}</small>{{end}}
+          </td>
+          <td>
+            <small>
+              <span class="badge bg-light text-dark me-1"><i class="bi bi-{{tipoIcon .TipoEquipo}}"></i></span>
+              {{if .MarcaNombre}}{{.MarcaNombre}} {{end}}{{.ModeloTexto}}
+            </small>
+          </td>
+          <td><small class="text-muted">{{truncate .FallaReportada 40}}</small></td>
+          <td><small class="text-muted">{{.FechaIngreso}}</small></td>
+          <td><span class="badge bg-{{statusColor .Status}}">{{statusLabel .Status}}</span></td>
+          <td>{{if gt .Total 0.0}}${{printf "%.2f" .Total}}{{end}}</td>
+          <td><a href="/admin/reparaciones/{{.ID}}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a></td>
+        </tr>{{end}}{{else}}
+        <tr><td colspan="8" class="text-center py-4 text-muted">No hay reparaciones registradas</td></tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+</div></div>
+
+<script>
+const searchInput = document.getElementById('repSearch');
+if(searchInput) {
+  searchInput.addEventListener('keyup', function(){
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('.rep-row').forEach(r => {
+      r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+}
+</script>
+{{end}}

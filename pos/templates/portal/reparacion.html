@@ -1,0 +1,109 @@
+{{define "title"}}{{if .Reparacion.ID}}Reparación #{{.Reparacion.Folio}}{{else}}Seguimiento de reparación{{end}}{{end}}
+{{define "content"}}
+{{if .Reparacion.ID}}
+{{$r := .Reparacion}}
+<div class="container py-4" style="max-width:600px">
+  <div class="text-center mb-4">
+    <h4><i class="bi bi-phone"></i> {{.Negocio}}</h4>
+    <p class="text-muted">Seguimiento de reparación</p>
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body text-center">
+      <div class="display-6 mb-2"><i class="bi bi-{{tipoIcon $r.TipoEquipo}}"></i></div>
+      <h5>{{$r.MarcaNombre}} {{$r.ModeloTexto}}</h5>
+      <p class="text-muted small mb-2">Reparación #{{$r.Folio}}</p>
+      <div class="d-flex justify-content-center gap-2 flex-wrap mb-2">
+        <span class="badge bg-{{statusColor $r.Status}} fs-6">{{statusLabel $r.Status}}</span>
+        {{if $r.NumeroSerie}}<span class="badge bg-light text-dark">S/N: {{$r.NumeroSerie}}</span>{{end}}
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <h6><i class="bi bi-clock-history"></i> Progreso</h6>
+      <div class="timeline-public">
+        {{if $r.Historial}}{{range $h := $r.Historial}}
+        <div class="tl-item">
+          <div class="tl-dot bg-{{statusColor $h.StatusNuevo}}"></div>
+          <div class="tl-content">
+            <strong>{{statusLabel $h.StatusNuevo}}</strong>
+            <small class="text-muted d-block">{{$h.CreadoEn}}</small>
+            {{if $h.Notas}}<small class="d-block">{{$h.Notas}}</small>{{end}}
+          </div>
+        </div>
+        {{end}}{{else}}
+        <div class="tl-item">
+          <div class="tl-dot bg-primary"></div>
+          <div class="tl-content">
+            <strong>Recibido</strong>
+            <small class="text-muted d-block">{{$r.FechaIngreso}}</small>
+          </div>
+        </div>
+        {{end}}
+      </div>
+    </div>
+  </div>
+
+  {{if $r.NotasCliente}}
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <h6><i class="bi bi-chat-dots"></i> Notas del técnico</h6>
+      <p class="mb-0">{{$r.NotasCliente}}</p>
+    </div>
+  </div>
+  {{end}}
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <h6><i class="bi bi-info-circle"></i> Detalles</h6>
+      <table class="table table-sm small mb-0">
+        <tr><td class="text-muted">Ingreso</td><td>{{$r.FechaIngreso}}</td></tr>
+        {{if $r.FechaPrometida}}<tr><td class="text-muted">Fecha prometida</td><td>{{$r.FechaPrometida}}</td></tr>{{end}}
+        {{if $r.FallaReportada}}<tr><td class="text-muted">Falla reportada</td><td>{{$r.FallaReportada}}</td></tr>{{end}}
+        {{if $r.Diagnostico}}<tr><td class="text-muted">Diagnóstico</td><td>{{$r.Diagnostico}}</td></tr>{{end}}
+        {{if gt $r.Total 0.0}}<tr><td class="text-muted">Total</td><td><strong>${{printf "%.2f" $r.Total}}</strong></td></tr>{{end}}
+        {{if gt $r.Anticipo 0.0}}<tr><td class="text-muted">Anticipo</td><td>${{printf "%.2f" $r.Anticipo}}</td></tr>{{end}}
+      </table>
+    </div>
+  </div>
+
+  {{if .Telefono}}
+  <div class="text-center mb-4">
+    <a href="https://wa.me/521{{.Telefono}}?text={{urlquery (printf "Hola, quiero saber sobre mi reparación #%d - %s %s" $r.Folio $r.MarcaNombre $r.ModeloTexto)}}" target="_blank" class="btn btn-whatsapp btn-lg w-100">
+      <i class="bi bi-whatsapp"></i> Consultar por WhatsApp
+    </a>
+  </div>
+  {{end}}
+
+  <div class="text-center text-muted small">
+    <i class="bi bi-qr-code"></i> Escaneá este código al recibir tu equipo
+  </div>
+</div>
+
+<style>
+.timeline-public { position: relative; padding-left: 28px; }
+.timeline-public::before {
+  content: ''; position: absolute; left: 10px; top: 4px; bottom: 4px;
+  width: 2px; background: #e9ecef;
+}
+.tl-item { position: relative; padding-bottom: 16px; }
+.tl-item:last-child { padding-bottom: 0; }
+.tl-dot {
+  position: absolute; left: -22px; top: 4px;
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid #fff; box-shadow: 0 0 0 2px currentColor;
+}
+.tl-content { padding-left: 4px; }
+</style>
+
+{{else}}
+<div class="container py-5 text-center" style="max-width:500px">
+  <div class="display-1 text-muted mb-3"><i class="bi bi-search"></i></div>
+  <h4>Reparación no encontrada</h4>
+  <p class="text-muted">{{.Error}}</p>
+  <a href="/" class="btn btn-primary">Ir a la tienda</a>
+</div>
+{{end}}
+{{end}}

@@ -693,6 +693,524 @@ func handleAdminUpload(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]any{"url": "/uploads/" + filename})
 }
 
+// ─── Repair Handlers ──────────────────────────────────────────────
+
+// Dashboard principal
+func handleAdminReparacionesList(w http.ResponseWriter, r *http.Request) {
+	f := r.URL.Query().Get("f")
+	q := r.URL.Query().Get("q")
+	s := r.URL.Query().Get("s") // status filter
+
+	where := []string{"r.activo = 1"}
+	args := []any{}
+	if s != "" && s != "todas" {
+		where = append(where, "r.status = ?")
+		args = append(args, s)
+	}
+	if q != "" {
+		where = append(where, "(r.cliente_nombre LIKE ? OR r.modelo_texto LIKE ? OR r.falla_reportada LIKE ? OR r.numero_serie LIKE ?)")
+		like := "%" + q + "%"
+		args = append(args, like, like, like, like)
+	}
+	// Custom filter
+	if f == "hoy" {
+		where = append(where, "date(r.fecha_ingreso) = date('now')")
+	} else if f == "atrasados" {
+		where = append(where, "julianday('now') - julianday(r.fecha_ingreso) > 7")
+	} else if f == "listos" {
+		where = append(where, "r.status = 'reparado'")
+	} else if f == "proceso" {
+		where = append(where, "r.status IN ('recibido','diagnosticando')")
+	}
+
+	rows, _ := db.Query(`SELECT r.id, r.folio, r.token, r.tipo_equipo,
+		COALESCE(m.nombre,'') as marca_nombre, r.modelo_texto,
+		r.cliente_nombre, COALESCE(r.cliente_telefono,'') as cliente_telefono,
+		r.status, r.fecha_ingreso, r.total
+		FROM reparaciones r
+		LEFT JOIN marcas m ON m.id = r.marca_id
+		WHERE `+strings.Join(where, " AND ")+`
+		ORDER BY r.fecha_ingreso DESC LIMIT 100`, args...)
+
+	var reps []ReparacionResumen
+	for rows.Next() {
+		var r ReparacionResumen
+		rows.Scan(&r.ID, &r.Folio, &r.Token, &r.TipoEquipo,
+			&r.MarcaNombre, &r.ModeloTexto,
+			&r.ClienteNombre, &r.ClienteTelefono,
+			&r.Status, &r.FechaIngreso, &r.Total)
+		reps = append(reps, r)
+	}
+	rows.Close()
+
+	// Stats
+	var stats ReparacionStats
+	db.QueryRow(`SELECT
+		COALESCE(SUM(CASE WHEN date(fecha_ingreso) = date('now') THEN 1 ELSE 0 END),0),
+		COALESCE(SUM(CASE WHEN status IN ('recibido','diagnosticando') THEN 1 ELSE 0 END),0),
+		COALESCE(SUM(CASE WHEN status = 'presupuestado' THEN 1 ELSE 0 END),0),
+		COALESCE(SUM(CASE WHEN status = 'reparado' THEN 1 ELSE 0 END),0),
+		COALESCE(SUM(CASE WHEN julianday('now')-julianday(fecha_ingreso)>7 AND status NOT IN ('entregado','cancelado') THEN 1 ELSE 0 END),0),
+		COUNT(*),
+		COALESCE(SUM(CASE WHEN status IN ('entregado','cancelado') AND strftime('%Y-%m',fecha_entrega)=strftime('%Y-%m','now') THEN 1 ELSE 0 END),0)
+		FROM reparaciones WHERE activo=1`).Scan(
+		&stats.HoyRecibidos, &stats.EnProceso, &stats.EsperaAprobacion,
+		&stats.ListosEntrega, &stats.Atrasados, &stats.TotalActivos,
+		&stats.CompletadosMes)
+
+	pd := adminPD(r)
+	pd.Title = "Reparaciones"
+	pd.Active = "reparaciones"
+	pd.Reparaciones = reps
+	pd.ReparacionStats = stats
+	pd.Query = q
+	pd.ReparacionStatus = s
+	pd.ReparacionFilter = f
+	renderTemplate(w, "admin/reparaciones_list.html", pd)
+}
+
+// Kanban
+func handleAdminReparacionesKanban(w http.ResponseWriter, r *http.Request) {
+	rows, _ := db.Query(`SELECT r.id, r.folio, r.token, r.tipo_equipo,
+		COALESCE(m.nombre,'') as marca_nombre, r.modelo_texto,
+		r.cliente_nombre, COALESCE(r.cliente_telefono,''),
+		r.status, r.fecha_ingreso, r.total
+		FROM reparaciones r
+		LEFT JOIN marcas m ON m.id = r.marca_id
+		WHERE r.activo = 1 AND r.status NOT IN ('entregado','cancelado')
+		ORDER BY r.fecha_ingreso ASC`)
+	defer rows.Close()
+
+	byStatus := map[string][]ReparacionResumen{}
+	for rows.Next() {
+		var r ReparacionResumen
+		rows.Scan(&r.ID, &r.Folio, &r.Token, &r.TipoEquipo,
+			&r.MarcaNombre, &r.ModeloTexto,
+			&r.ClienteNombre, &r.ClienteTelefono,
+			&r.Status, &r.FechaIngreso, &r.Total)
+		byStatus[r.Status] = append(byStatus[r.Status], r)
+	}
+
+	pd := adminPD(r)
+	pd.Title = "Kanban — Reparaciones"
+	pd.Active = "reparaciones"
+	pd.KanbanData = byStatus
+	pd.KanbanStatuses = []string{"recibido", "diagnosticando", "presupuestado", "aprobado", "reparando", "reparado", "entregado"}
+	renderTemplate(w, "admin/reparaciones_kanban.html", pd)
+}
+
+// Nueva reparación — form
+func handleAdminReparacionNuevaPage(w http.ResponseWriter, r *http.Request) {
+	pd := adminPD(r)
+	pd.Title = "Nueva Reparación"
+	pd.Active = "reparaciones"
+	pd.Marcas = queryMarcas()
+	pd.TipoEquipos = TipoEquipos
+	renderTemplate(w, "admin/reparacion_form.html", pd)
+}
+
+// Crear reparación
+func handleAdminReparacionCrear(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+
+	marcaID, _ := strconv.Atoi(r.FormValue("marca_id"))
+
+	var folio int
+	db.QueryRow("SELECT COALESCE(MAX(folio), 0) + 1 FROM reparaciones").Scan(&folio)
+
+	_, err := db.Exec(`INSERT INTO reparaciones
+		(folio, tipo_equipo, marca_id, modelo_texto, numero_serie, imei,
+		 password_equipo, condicion_fisica, cliente_nombre, cliente_telefono,
+		 cliente_email, falla_reportada, diagnostico, accesorios,
+		 notas_cliente, notas_internas, status, fecha_prometida,
+		 costo_diagnostico, anticipo, tecnico_id)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		folio,
+		r.FormValue("tipo_equipo"),
+		marcaID,
+		r.FormValue("modelo_texto"),
+		r.FormValue("numero_serie"),
+		r.FormValue("imei"),
+		r.FormValue("password_equipo"),
+		r.FormValue("condicion_fisica"),
+		r.FormValue("cliente_nombre"),
+		r.FormValue("cliente_telefono"),
+		r.FormValue("cliente_email"),
+		r.FormValue("falla_reportada"),
+		r.FormValue("diagnostico"),
+		r.FormValue("accesorios"),
+		r.FormValue("notas_cliente"),
+		r.FormValue("notas_internas"),
+		"recibido",
+		r.FormValue("fecha_prometida"),
+		parseFloat(r.FormValue("costo_diagnostico")),
+		parseFloat(r.FormValue("anticipo")),
+		sessionUserID(r),
+	)
+
+	if err != nil {
+		pd := adminPD(r)
+		pd.Title = "Nueva Reparación"
+		pd.Active = "reparaciones"
+		pd.Error = err.Error()
+		pd.Marcas = queryMarcas()
+		renderTemplate(w, "admin/reparacion_form.html", pd)
+		return
+	}
+
+	if r.FormValue("_save_and_new") == "1" {
+		http.Redirect(w, r, "/admin/reparaciones/nueva?success=ok", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, "/admin/reparaciones", http.StatusSeeOther)
+}
+
+// Detalle de reparación
+func handleAdminReparacionDetalle(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(r.PathValue("id"))
+	rep := queryReparacionFull(id)
+	if rep.ID == 0 {
+		http.Redirect(w, r, "/admin/reparaciones", http.StatusSeeOther)
+		return
+	}
+	pd := adminPD(r)
+	pd.Title = "Rep #" + strconv.Itoa(rep.Folio) + " — " + rep.ClienteNombre
+	pd.Active = "reparaciones"
+	pd.Reparacion = rep
+	pd.Marcas = queryMarcas()
+	pd.Piezas = queryPiezasActivas()
+	pd.KanbanStatuses = []string{"recibido", "diagnosticando", "presupuestado", "aprobado", "reparando", "reparado", "entregado"}
+	renderTemplate(w, "admin/reparacion_detail.html", pd)
+}
+
+// Cambiar status
+func handleAdminReparacionStatus(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(r.PathValue("id"))
+	r.ParseForm()
+	nuevoStatus := r.FormValue("status")
+	notas := r.FormValue("notas")
+
+	var statusActual string
+	db.QueryRow("SELECT status FROM reparaciones WHERE id = ?", id).Scan(&statusActual)
+	if statusActual == "" {
+		json.NewEncoder(w).Encode(map[string]any{"error": "Reparación no encontrada"})
+		return
+	}
+
+	if nuevoStatus == "entregado" || nuevoStatus == "cancelado" {
+		db.Exec("UPDATE reparaciones SET status=?, fecha_entrega=datetime('now','localtime') WHERE id=?", nuevoStatus, id)
+	} else {
+		db.Exec("UPDATE reparaciones SET status=? WHERE id=?", nuevoStatus, id)
+	}
+
+	// Log manual (the trigger handles status_anterior/status_nuevo)
+	uid := sessionUserID(r)
+	if notas != "" {
+		db.Exec("UPDATE reparaciones_historial SET notas=?, usuario_id=? WHERE reparacion_id=? AND status_nuevo=? AND notas IS NULL",
+			notas, uid, id, nuevoStatus)
+	}
+
+	json.NewEncoder(w).Encode(map[string]any{"success": true, "status": nuevoStatus})
+}
+
+type StatusUpdateData struct {
+	Status      string
+	Label       string
+	Color       string
+	Icon        string
+	StatusesForSelect []string
+	StatusLabels      map[string]string
+	StatusColors      map[string]string
+	StatusIcons       map[string]string
+	IsActive    bool
+}
+
+// Agregar pieza a reparación
+func handleAdminReparacionPiezaAgregar(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(r.PathValue("id"))
+	r.ParseForm()
+	piezaID, _ := strconv.Atoi(r.FormValue("pieza_id"))
+	cantidad, _ := strconv.Atoi(r.FormValue("cantidad"))
+	if cantidad < 1 {
+		cantidad = 1
+	}
+
+	var precio float64
+	var nombre string
+	err := db.QueryRow("SELECT precio, nombre FROM piezas WHERE id = ? AND activa = 1", piezaID).Scan(&precio, &nombre)
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"error": "Pieza no encontrada"})
+		return
+	}
+
+	subtotal := precio * float64(cantidad)
+	_, err = db.Exec("INSERT INTO reparaciones_piezas (reparacion_id, pieza_id, cantidad, precio_unitario, subtotal) VALUES (?,?,?,?,?)",
+		id, piezaID, cantidad, precio, subtotal)
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"error": err.Error()})
+		return
+	}
+
+	// Update repair total
+	db.Exec(`UPDATE reparaciones SET total = (
+		SELECT COALESCE(SUM(subtotal),0) FROM reparaciones_piezas WHERE reparacion_id = ?
+	) + costo_diagnostico WHERE id = ?`, id, id)
+
+	json.NewEncoder(w).Encode(map[string]any{"success": true, "pieza": nombre, "cantidad": cantidad})
+}
+
+// Quitar pieza de reparación
+func handleAdminReparacionPiezaQuitar(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(r.PathValue("id"))
+	pid, _ := strconv.Atoi(r.PathValue("pid"))
+	db.Exec("DELETE FROM reparaciones_piezas WHERE id = ? AND reparacion_id = ?", pid, id)
+
+	db.Exec(`UPDATE reparaciones SET total = (
+		SELECT COALESCE(SUM(subtotal),0) FROM reparaciones_piezas WHERE reparacion_id = ?
+	) + costo_diagnostico WHERE id = ?`, id, id)
+
+	json.NewEncoder(w).Encode(map[string]any{"success": true})
+}
+
+// Subir archivo a reparación
+func handleAdminReparacionArchivoSubir(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(r.PathValue("id"))
+	r.Body = http.MaxBytesReader(w, r.Body, 10<<20) // 10MB max
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"error": "Archivo muy grande (máx 10MB)"})
+		return
+	}
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"error": "No se recibió archivo"})
+		return
+	}
+	defer file.Close()
+
+	ext := strings.ToLower(filepath.Ext(header.Filename))
+	allowed := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".webp": true, ".gif": true, ".pdf": true}
+	if !allowed[ext] {
+		json.NewEncoder(w).Encode(map[string]any{"error": "Formato no permitido: " + ext})
+		return
+	}
+
+	b := make([]byte, 8)
+	rand.Read(b)
+	filename := fmt.Sprintf("rep%d_%s%s", id, hex.EncodeToString(b), ext)
+	dst, err := os.Create(filepath.Join("uploads", filename))
+	if err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"error": "Error al guardar"})
+		return
+	}
+	defer dst.Close()
+	io.Copy(dst, file)
+
+	url := "/uploads/" + filename
+	tipo := "foto"
+	if ext == ".pdf" {
+		tipo = "pdf"
+	}
+
+	uid := sessionUserID(r)
+	db.Exec("INSERT INTO reparaciones_archivos (reparacion_id, nombre, url, tipo, subido_por) VALUES (?,?,?,?,?)",
+		id, header.Filename, url, tipo, uid)
+
+	json.NewEncoder(w).Encode(map[string]any{"success": true, "url": url, "nombre": header.Filename})
+}
+
+// Quitar archivo
+func handleAdminReparacionArchivoQuitar(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(r.PathValue("id"))
+	aid, _ := strconv.Atoi(r.PathValue("aid"))
+	var url string
+	db.QueryRow("SELECT url FROM reparaciones_archivos WHERE id = ? AND reparacion_id = ?", aid, id).Scan(&url)
+	if url != "" {
+		os.Remove("." + url)
+	}
+	db.Exec("DELETE FROM reparaciones_archivos WHERE id = ? AND reparacion_id = ?", aid, id)
+	json.NewEncoder(w).Encode(map[string]any{"success": true})
+}
+
+// Guardar notas
+func handleAdminReparacionGuardar(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(r.PathValue("id"))
+	r.ParseForm()
+	db.Exec(`UPDATE reparaciones SET
+		cliente_nombre=?, cliente_telefono=?, cliente_email=?,
+		modelo_texto=?, numero_serie=?, imei=?, password_equipo=?, condicion_fisica=?,
+		falla_reportada=?, diagnostico=?, accesorios=?,
+		notas_cliente=?, notas_internas=?,
+		fecha_prometida=?, costo_diagnostico=?, anticipo=?
+		WHERE id=?`,
+		r.FormValue("cliente_nombre"),
+		r.FormValue("cliente_telefono"),
+		r.FormValue("cliente_email"),
+		r.FormValue("modelo_texto"),
+		r.FormValue("numero_serie"),
+		r.FormValue("imei"),
+		r.FormValue("password_equipo"),
+		r.FormValue("condicion_fisica"),
+		r.FormValue("falla_reportada"),
+		r.FormValue("diagnostico"),
+		r.FormValue("accesorios"),
+		r.FormValue("notas_cliente"),
+		r.FormValue("notas_internas"),
+		r.FormValue("fecha_prometida"),
+		parseFloat(r.FormValue("costo_diagnostico")),
+		parseFloat(r.FormValue("anticipo")),
+		id)
+	http.Redirect(w, r, "/admin/reparaciones/"+strconv.Itoa(id), http.StatusSeeOther)
+}
+
+// Portal público: el cliente ve su reparación
+func handlePublicReparacionStatus(w http.ResponseWriter, r *http.Request) {
+	token := r.PathValue("token")
+
+	var rep Reparacion
+	err := db.QueryRow(`SELECT r.id, r.folio, r.token, r.tipo_equipo,
+		COALESCE(m.nombre,''), COALESCE(r.modelo_texto,''),
+		COALESCE(r.numero_serie,''), COALESCE(r.imei,''),
+		COALESCE(r.cliente_nombre,''), COALESCE(r.cliente_telefono,''),
+		COALESCE(r.falla_reportada,''), COALESCE(r.diagnostico,''),
+		COALESCE(r.notas_cliente,''),
+		r.status, r.fecha_ingreso, COALESCE(r.fecha_prometida,''), COALESCE(r.fecha_entrega,''),
+		r.costo_diagnostico, r.costo_reparacion, r.total, r.anticipo
+		FROM reparaciones r
+		LEFT JOIN marcas m ON m.id = r.marca_id
+		WHERE r.token = ? AND r.activo = 1`, token).Scan(
+		&rep.ID, &rep.Folio, &rep.Token, &rep.TipoEquipo,
+		&rep.MarcaNombre, &rep.ModeloTexto,
+		&rep.NumeroSerie, &rep.IMEI,
+		&rep.ClienteNombre, &rep.ClienteTelefono,
+		&rep.FallaReportada, &rep.Diagnostico,
+		&rep.NotasCliente,
+		&rep.Status, &rep.FechaIngreso, &rep.FechaPrometida, &rep.FechaEntrega,
+		&rep.CostoDiagnostico, &rep.CostoReparacion, &rep.Total, &rep.Anticipo)
+
+	if err != nil {
+		renderTemplate(w, "portal/reparacion.html", PageData{
+			Title: "Reparación no encontrada",
+			Error: "No encontramos ninguna reparación con ese código. Verificá el enlace o contactanos.",
+		})
+		return
+	}
+
+	// Get history
+	rows, _ := db.Query(`SELECT rh.status_anterior, rh.status_nuevo,
+		COALESCE(rh.notas,''), rh.creado_en
+		FROM reparaciones_historial rh
+		WHERE rh.reparacion_id = ?
+		ORDER BY rh.creado_en ASC`, rep.ID)
+	for rows.Next() {
+		var h ReparacionHistorial
+		rows.Scan(&h.StatusAnterior, &h.StatusNuevo, &h.Notas, &h.CreadoEn)
+		rep.Historial = append(rep.Historial, h)
+	}
+	rows.Close()
+
+	theme := getConfig("tema")
+	telefono := getConfig("telefono")
+	negocio := getConfig("negocio_nombre")
+
+	pd := PageData{
+		Title:     "Reparación #" + strconv.Itoa(rep.Folio),
+		Theme:     theme,
+		Telefono:  telefono,
+		Negocio:   negocio,
+		Reparacion: rep,
+	}
+	renderTemplate(w, "portal/reparacion.html", pd)
+}
+
+// ─── Repair helpers ───────────────────────────────────────────────
+
+func queryReparacionFull(id int) Reparacion {
+	var r Reparacion
+	err := db.QueryRow(`SELECT r.id, r.folio, r.token, r.tipo_equipo,
+		COALESCE(r.marca_id,0), COALESCE(m.nombre,''), COALESCE(r.modelo_texto,''),
+		COALESCE(r.numero_serie,''), COALESCE(r.imei,''), COALESCE(r.password_equipo,''),
+		COALESCE(r.condicion_fisica,''),
+		COALESCE(r.cliente_nombre,''), COALESCE(r.cliente_telefono,''), COALESCE(r.cliente_email,''),
+		COALESCE(r.falla_reportada,''), COALESCE(r.diagnostico,''), COALESCE(r.accesorios,''),
+		COALESCE(r.notas_cliente,''), COALESCE(r.notas_internas,''),
+		r.status, r.fecha_ingreso, COALESCE(r.fecha_prometida,''), COALESCE(r.fecha_entrega,''),
+		r.costo_diagnostico, r.costo_reparacion, r.total, r.anticipo,
+		COALESCE(r.tecnico_id,0), COALESCE(u.nombre_completo,'')
+		FROM reparaciones r
+		LEFT JOIN marcas m ON m.id = r.marca_id
+		LEFT JOIN usuarios u ON u.id = r.tecnico_id
+		WHERE r.id = ?`, id).Scan(
+		&r.ID, &r.Folio, &r.Token, &r.TipoEquipo,
+		&r.MarcaID, &r.MarcaNombre, &r.ModeloTexto,
+		&r.NumeroSerie, &r.IMEI, &r.PasswordEquipo,
+		&r.CondicionFisica,
+		&r.ClienteNombre, &r.ClienteTelefono, &r.ClienteEmail,
+		&r.FallaReportada, &r.Diagnostico, &r.Accesorios,
+		&r.NotasCliente, &r.NotasInternas,
+		&r.Status, &r.FechaIngreso, &r.FechaPrometida, &r.FechaEntrega,
+		&r.CostoDiagnostico, &r.CostoReparacion, &r.Total, &r.Anticipo,
+		&r.TecnicoID, &r.TecnicoNombre)
+	if err != nil {
+		return r
+	}
+	r.Activo = true
+
+	// History
+	rows, _ := db.Query(`SELECT rh.id, COALESCE(rh.status_anterior,''), rh.status_nuevo,
+		COALESCE(rh.usuario_id,0), COALESCE(u.nombre_completo,''),
+		COALESCE(rh.notas,''), rh.creado_en
+		FROM reparaciones_historial rh
+		LEFT JOIN usuarios u ON u.id = rh.usuario_id
+		WHERE rh.reparacion_id = ?
+		ORDER BY rh.creado_en ASC`, id)
+	for rows.Next() {
+		var h ReparacionHistorial
+		rows.Scan(&h.ID, &h.StatusAnterior, &h.StatusNuevo,
+			&h.UsuarioID, &h.UsuarioNombre, &h.Notas, &h.CreadoEn)
+		r.Historial = append(r.Historial, h)
+	}
+	rows.Close()
+
+	// Parts used
+	rows2, _ := db.Query(`SELECT rp.id, rp.reparacion_id, rp.pieza_id,
+		p.nombre, p.codigo, rp.cantidad, rp.precio_unitario, rp.subtotal
+		FROM reparaciones_piezas rp
+		JOIN piezas p ON p.id = rp.pieza_id
+		WHERE rp.reparacion_id = ?`, id)
+	for rows2.Next() {
+		var rp ReparacionPieza
+		rows2.Scan(&rp.ID, &rp.ReparacionID, &rp.PiezaID,
+			&rp.PiezaNombre, &rp.PiezaCodigo, &rp.Cantidad,
+			&rp.PrecioUnitario, &rp.Subtotal)
+		r.PiezasUsadas = append(r.PiezasUsadas, rp)
+	}
+	rows2.Close()
+
+	// Files
+	rows3, _ := db.Query(`SELECT id, nombre, url, tipo, subido_por, created_at
+		FROM reparaciones_archivos WHERE reparacion_id = ? ORDER BY created_at DESC`, id)
+	for rows3.Next() {
+		var a ReparacionArchivo
+		rows3.Scan(&a.ID, &a.Nombre, &a.URL, &a.Tipo, &a.SubidoPor, &a.CreadoEn)
+		r.Archivos = append(r.Archivos, a)
+	}
+	rows3.Close()
+
+	return r
+}
+
+func queryPiezasActivas() []PiezaResumen {
+	rows, _ := db.Query("SELECT id, nombre, codigo, precio, stock FROM piezas WHERE activa = 1 ORDER BY nombre")
+	defer rows.Close()
+	var ps []PiezaResumen
+	for rows.Next() {
+		var p PiezaResumen
+		rows.Scan(&p.ID, &p.Nombre, &p.Codigo, &p.Precio, &p.Stock)
+		ps = append(ps, p)
+	}
+	return ps
+}
+
 // ─── Queries ──────────────────────────────────────────────────────
 
 func queryCategorias() []Categoria {

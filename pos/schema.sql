@@ -138,11 +138,112 @@ INSERT OR IGNORE INTO categorias (nombre, slug, icono, descripcion, orden) VALUE
 ('Sensores', 'sensores', 'sensor', 'Huella, FaceID, proximidad, giroscopio', 9),
 ('Herramientas', 'herramientas', 'wrench', 'Kits de apertura, ventosas, pinzas', 10);
 
--- Marcas principales
+-- Marcas principales (celulares + laptops/PC + audio)
 INSERT OR IGNORE INTO marcas (nombre) VALUES
-('Apple'), ('Samsung'), ('Xiaomi'), ('Motorola'), ('Huawei'), ('Oppo'), ('Vivo'), ('Realme'), ('OnePlus'), ('Google'), ('Nokia'), ('Sony'), ('LG'), ('Alcatel'), ('TCL'), ('ZTE'), ('Otras');
+('Apple'), ('Samsung'), ('Xiaomi'), ('Motorola'), ('Huawei'), ('Oppo'), ('Vivo'), ('Realme'), ('OnePlus'), ('Google'), ('Nokia'), ('Sony'), ('LG'), ('Alcatel'), ('TCL'), ('ZTE'), ('Dell'), ('HP'), ('Lenovo'), ('ASUS'), ('Acer'), ('Microsoft'), ('Toshiba'), ('Panasonic'), ('Harman Kardon'), ('JBL'), ('Bose'), ('Sennheiser'), ('AMD'), ('Intel'), ('NVIDIA'), ('Kingston'), ('Corsair'), ('Seagate'), ('Western Digital'), ('Crucial'), ('Otras');
 
--- Trigger para updated_at
+-- ─── Reparaciones ────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS reparaciones (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    folio INTEGER NOT NULL,
+    token TEXT NOT NULL UNIQUE DEFAULT (lower(hex(randomblob(16)))),
+    tipo_equipo TEXT NOT NULL DEFAULT 'laptop', -- laptop, pc, celular, audio, otro
+    marca_id INTEGER REFERENCES marcas(id),
+    modelo_texto TEXT,
+    numero_serie TEXT,
+    imei TEXT,
+    password_equipo TEXT,
+    condicion_fisica TEXT,
+    cliente_nombre TEXT NOT NULL,
+    cliente_telefono TEXT,
+    cliente_email TEXT,
+    falla_reportada TEXT NOT NULL,
+    diagnostico TEXT,
+    accesorios TEXT,
+    notas_cliente TEXT,
+    notas_internas TEXT,
+    status TEXT NOT NULL DEFAULT 'recibido',
+    fecha_ingreso TEXT DEFAULT (datetime('now','localtime')),
+    fecha_prometida TEXT,
+    fecha_entrega TEXT,
+    costo_diagnostico REAL DEFAULT 0,
+    costo_reparacion REAL DEFAULT 0,
+    total REAL DEFAULT 0,
+    anticipo REAL DEFAULT 0,
+    tecnico_id INTEGER REFERENCES usuarios(id),
+    activo INTEGER DEFAULT 1,
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    updated_at TEXT DEFAULT (datetime('now','localtime'))
+);
+
+CREATE TABLE IF NOT EXISTS reparaciones_piezas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    reparacion_id INTEGER NOT NULL REFERENCES reparaciones(id) ON DELETE CASCADE,
+    pieza_id INTEGER NOT NULL REFERENCES piezas(id),
+    cantidad INTEGER NOT NULL DEFAULT 1,
+    precio_unitario REAL NOT NULL,
+    subtotal REAL NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS reparaciones_archivos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    reparacion_id INTEGER NOT NULL REFERENCES reparaciones(id) ON DELETE CASCADE,
+    nombre TEXT NOT NULL,
+    url TEXT NOT NULL,
+    tipo TEXT DEFAULT 'foto', -- foto, pdf, otro
+    subido_por INTEGER REFERENCES usuarios(id),
+    created_at TEXT DEFAULT (datetime('now','localtime'))
+);
+
+CREATE TABLE IF NOT EXISTS reparaciones_historial (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    reparacion_id INTEGER NOT NULL REFERENCES reparaciones(id) ON DELETE CASCADE,
+    status_anterior TEXT,
+    status_nuevo TEXT NOT NULL,
+    usuario_id INTEGER REFERENCES usuarios(id),
+    notas TEXT,
+    creado_en TEXT DEFAULT (datetime('now','localtime'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_reparaciones_status ON reparaciones(status);
+CREATE INDEX IF NOT EXISTS idx_reparaciones_token ON reparaciones(token);
+CREATE INDEX IF NOT EXISTS idx_reparaciones_folio ON reparaciones(folio);
+CREATE INDEX IF NOT EXISTS idx_reparaciones_cliente ON reparaciones(cliente_nombre);
+CREATE INDEX IF NOT EXISTS idx_reparaciones_marca ON reparaciones(marca_id);
+CREATE INDEX IF NOT EXISTS idx_reparaciones_piezas_rep ON reparaciones_piezas(reparacion_id);
+CREATE INDEX IF NOT EXISTS idx_reparaciones_historial_rep ON reparaciones_historial(reparacion_id);
+CREATE INDEX IF NOT EXISTS idx_reparaciones_archivos_rep ON reparaciones_archivos(reparacion_id);
+
+CREATE TRIGGER IF NOT EXISTS update_reparaciones_timestamp
+AFTER UPDATE ON reparaciones
+BEGIN
+    UPDATE reparaciones SET updated_at = datetime('now','localtime') WHERE id = NEW.id;
+END;
+
+-- Trigger: auto-log historial on status change
+CREATE TRIGGER IF NOT EXISTS log_reparacion_status
+AFTER UPDATE OF status ON reparaciones
+BEGIN
+    INSERT INTO reparaciones_historial (reparacion_id, status_anterior, status_nuevo)
+    VALUES (NEW.id, OLD.status, NEW.status);
+END;
+
+-- Trigger: auto-decrement stock when repair part is added
+CREATE TRIGGER IF NOT EXISTS reparacion_descontar_stock
+AFTER INSERT ON reparaciones_piezas
+BEGIN
+    UPDATE piezas SET stock = stock - NEW.cantidad WHERE id = NEW.pieza_id;
+END;
+
+-- Trigger: restore stock when repair part is removed
+CREATE TRIGGER IF NOT EXISTS reparacion_restaurar_stock
+AFTER DELETE ON reparaciones_piezas
+BEGIN
+    UPDATE piezas SET stock = stock + OLD.cantidad WHERE id = OLD.pieza_id;
+END;
+
+-- Trigger para updated_at en piezas
 CREATE TRIGGER IF NOT EXISTS update_piezas_timestamp
 AFTER UPDATE ON piezas
 BEGIN

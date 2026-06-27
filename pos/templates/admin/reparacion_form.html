@@ -1,0 +1,138 @@
+{{define "title"}}Nueva Reparación — RefacCel Admin{{end}}
+{{define "adminContent"}}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-tools"></i> Nueva Reparación</h4>
+  <a href="/admin/reparaciones" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Volver</a>
+</div>
+
+{{if .Success}}<div class="alert alert-success alert-dismissible fade show">✓ Reparación creada. ¡Agregá otra!<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>{{end}}
+
+<form method="POST" action="/admin/reparaciones" class="needs-validation" novalidate>
+  <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+  <input type="hidden" name="_save_and_new" id="_save_and_new" value="0">
+
+  <div class="row g-3">
+    <div class="col-md-8">
+      <!-- Tipo de equipo -->
+      <div class="card shadow-sm"><div class="card-body">
+        <h6 class="card-title mb-3"><i class="bi bi-device-ssd"></i> Tipo de equipo</h6>
+        <div class="row g-2" id="tipoPicker">
+          {{range $t := $.TipoEquipos}}
+          <div class="col">
+            <div class="tipo-card" data-tipo="{{$t.Value}}" onclick="selectTipo(this)">
+              <div class="tipo-icon"><i class="bi bi-{{$t.Icon}}"></i></div>
+              <div class="tipo-name">{{$t.Label}}</div>
+            </div>
+          </div>
+          {{end}}
+        </div>
+        <input type="hidden" name="tipo_equipo" id="tipo_equipo" value="" required>
+      </div></div>
+
+      <!-- Cliente -->
+      <div class="card shadow-sm mt-3"><div class="card-body">
+        <h6 class="card-title mb-3"><i class="bi bi-person"></i> Cliente</h6>
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label">Nombre *</label><input type="text" name="cliente_nombre" class="form-control form-control-lg" required placeholder="Nombre completo" autofocus></div>
+          <div class="col-md-3"><label class="form-label">Teléfono</label><input type="text" name="cliente_telefono" class="form-control" placeholder="55 1234 5678"></div>
+          <div class="col-md-3"><label class="form-label">Email</label><input type="email" name="cliente_email" class="form-control" placeholder="cliente@email.com"></div>
+        </div>
+      </div></div>
+
+      <!-- Equipo -->
+      <div class="card shadow-sm mt-3"><div class="card-body">
+        <h6 class="card-title mb-3"><i class="bi bi-info-circle"></i> Equipo</h6>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Marca</label>
+            <select name="marca_id" class="form-select">
+              <option value="">Seleccionar</option>
+              {{range .Marcas}}<option value="{{.ID}}">{{.Nombre}}</option>{{end}}
+            </select>
+          </div>
+          <div class="col-md-6"><label class="form-label">Modelo</label><input type="text" name="modelo_texto" class="form-control" placeholder="Ej: ThinkPad X1 Carbon, iPhone 13"></div>
+          <div class="col-md-4"><label class="form-label">Número de serie</label><input type="text" name="numero_serie" class="form-control" placeholder="S/N"></div>
+          <div class="col-md-3"><label class="form-label">IMEI</label><input type="text" name="imei" class="form-control" placeholder="Para celulares"></div>
+          <div class="col-md-2"><label class="form-label">Password</label><input type="text" name="password_equipo" class="form-control" placeholder="PIN/BIOS"></div>
+          <div class="col-md-3"><label class="form-label">Condición física</label><input type="text" name="condicion_fisica" class="form-control" placeholder="Rayones, golpes"></div>
+        </div>
+      </div></div>
+
+      <!-- Servicio -->
+      <div class="card shadow-sm mt-3"><div class="card-body">
+        <h6 class="card-title mb-3"><i class="bi bi-wrench"></i> Servicio</h6>
+        <div class="row g-3">
+          <div class="col-12"><label class="form-label">Falla reportada *</label><textarea name="falla_reportada" class="form-control" rows="3" required placeholder="¿Qué problema tiene el equipo? Sé específico..."></textarea></div>
+          <div class="col-12"><label class="form-label">Diagnóstico inicial</label><textarea name="diagnostico" class="form-control" rows="2" placeholder="Hallazgos preliminares..."></textarea></div>
+          <div class="col-12"><label class="form-label">Accesorios recibidos</label><input type="text" name="accesorios" class="form-control" placeholder="Cargador, funda, audífonos, etc."></div>
+          <div class="col-md-6"><label class="form-label">Notas para el cliente</label><textarea name="notas_cliente" class="form-control" rows="2" placeholder="Visible en el portal del cliente"></textarea></div>
+          <div class="col-md-6"><label class="form-label">Notas internas</label><textarea name="notas_internas" class="form-control" rows="2" placeholder="Solo visible para el taller"></textarea></div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="col-md-4">
+      <!-- Fechas y costos -->
+      <div class="card shadow-sm"><div class="card-body">
+        <h6 class="card-title mb-3"><i class="bi bi-calendar"></i> Fechas</h6>
+        <div class="mb-3"><label class="form-label">Fecha prometida</label><input type="date" name="fecha_prometida" class="form-control"></div>
+        <h6 class="card-title mb-3"><i class="bi bi-cash-coin"></i> Costos</h6>
+        <div class="mb-2"><label class="form-label">Costo diagnóstico</label><div class="input-group"><span class="input-group-text">$</span><input type="number" name="costo_diagnostico" step="0.01" class="form-control" value="0"></div></div>
+        <div class="mb-2"><label class="form-label">Anticipo</label><div class="input-group"><span class="input-group-text">$</span><input type="number" name="anticipo" step="0.01" class="form-control" value="0"></div></div>
+      </div></div>
+
+      <!-- Acciones -->
+      <div class="card shadow-sm mt-3"><div class="card-body">
+        <h6 class="card-title mb-3"><i class="bi bi-lightning"></i> Acción</h6>
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-check-lg"></i> Registrar ingreso</button>
+          <button type="button" class="btn btn-success" onclick="saveAndNew()"><i class="bi bi-plus-circle"></i> Guardar y otra</button>
+          <a href="/admin/reparaciones" class="btn btn-outline-secondary">Cancelar</a>
+        </div>
+      </div></div>
+    </div>
+  </div>
+</form>
+
+<script>
+// ─── Tipo de equipo picker ───
+function selectTipo(el) {
+  document.querySelectorAll('.tipo-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('tipo_equipo').value = el.dataset.tipo;
+}
+function saveAndNew() {
+  document.getElementById('_save_and_new').value = '1';
+  document.getElementById('_save_and_new').form.submit();
+}
+// Validate tipo is selected
+document.querySelector('form').addEventListener('submit', function(e){
+  if(!document.getElementById('tipo_equipo').value) {
+    e.preventDefault();
+    alert('Seleccioná el tipo de equipo');
+  }
+});
+</script>
+<style>
+.tipo-card {
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 12px 6px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+}
+.tipo-card:hover {
+  border-color: #6C5CE7;
+  background: #f8f5ff;
+}
+.tipo-card.selected {
+  border-color: #6C5CE7;
+  background: #f0edff;
+  box-shadow: 0 0 0 3px rgba(108,92,231,0.15);
+}
+.tipo-card .tipo-icon { font-size: 1.6rem; color: #6C5CE7; margin-bottom: 4px; }
+.tipo-card .tipo-name { font-size: 0.75rem; font-weight: 600; color: #2D3436; }
+</style>
+{{end}}

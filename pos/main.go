@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	_ "modernc.org/sqlite"
@@ -59,6 +60,15 @@ type PageData struct {
 	Compatibilidades []any
 	Telefono   string
 	Negocio    string
+	// Repair fields
+	Reparaciones      []ReparacionResumen
+	Reparacion        Reparacion
+	ReparacionStats   ReparacionStats
+	ReparacionStatus  string
+	ReparacionFilter  string
+	KanbanData        map[string][]ReparacionResumen
+	KanbanStatuses    []string
+	TipoEquipos       []TipoEquipoOption
 	// Generic data fallback
 	Data       any
 }
@@ -132,6 +142,20 @@ func main() {
 	mux.HandleFunc("POST /admin/config", requireAuth(handleAdminConfigGuardar))
 	mux.HandleFunc("POST /admin/upload", requireAuth(handleAdminUpload))
 
+	// Reparaciones
+	mux.HandleFunc("GET /admin/reparaciones", requireAuth(handleAdminReparacionesList))
+	mux.HandleFunc("GET /admin/reparaciones/kanban", requireAuth(handleAdminReparacionesKanban))
+	mux.HandleFunc("GET /admin/reparaciones/nueva", requireAuth(handleAdminReparacionNuevaPage))
+	mux.HandleFunc("POST /admin/reparaciones", requireAuth(handleAdminReparacionCrear))
+	mux.HandleFunc("GET /admin/reparaciones/{id}", requireAuth(handleAdminReparacionDetalle))
+	mux.HandleFunc("POST /admin/reparaciones/{id}/status", requireAuth(handleAdminReparacionStatus))
+	mux.HandleFunc("POST /admin/reparaciones/{id}/piezas", requireAuth(handleAdminReparacionPiezaAgregar))
+	mux.HandleFunc("DELETE /admin/reparaciones/{id}/piezas/{pid}", requireAuth(handleAdminReparacionPiezaQuitar))
+	mux.HandleFunc("POST /admin/reparaciones/{id}/archivos", requireAuth(handleAdminReparacionArchivoSubir))
+	mux.HandleFunc("DELETE /admin/reparaciones/{id}/archivos/{aid}", requireAuth(handleAdminReparacionArchivoQuitar))
+	mux.HandleFunc("POST /admin/reparaciones/{id}", requireAuth(handleAdminReparacionGuardar))
+	mux.HandleFunc("GET /r/{token}", handlePublicReparacionStatus)
+
 	// Uploads
 	os.MkdirAll("uploads", 0755)
 	mux.Handle("GET /uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("uploads"))))
@@ -170,6 +194,16 @@ func parseForm(r *http.Request) error {
 		return nil
 	}
 	return r.ParseForm()
+}
+
+func parseFloat(s string) float64 {
+	v, _ := strconv.ParseFloat(s, 64)
+	return v
+}
+
+func sessionUserID(r *http.Request) int {
+	s := r.Context().Value("session").(*SessionData)
+	return s.UserID
 }
 
 func formValue(r *http.Request, key string) string {

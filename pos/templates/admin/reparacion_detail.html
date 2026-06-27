@@ -1,0 +1,248 @@
+{{define "title"}}Rep #{{.Reparacion.Folio}} — {{.Reparacion.ClienteNombre}}{{end}}
+{{define "adminContent"}}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <div>
+    <a href="/admin/reparaciones" class="btn btn-outline-secondary btn-sm me-2"><i class="bi bi-arrow-left"></i></a>
+    <h4 class="d-inline mb-0"><span class="badge bg-{{statusColor .Reparacion.Status}} fs-6 me-2">{{statusLabel .Reparacion.Status}}</span>
+    #{{.Reparacion.Folio}} — {{.Reparacion.ClienteNombre}}</h4>
+  </div>
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-success btn-sm" onclick="window.open(window.location.origin+'/r/{{.Reparacion.Token}}','_blank')"><i class="bi bi-link-45deg"></i> Portal</button>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Left column: info + edit -->
+  <div class="col-md-8">
+    <!-- Status bar + actions -->
+    <div class="card shadow-sm mb-3"><div class="card-body">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <small class="fw-semibold me-1">Status:</small>
+        {{range $s := $.KanbanStatuses}}
+        <button class="btn btn-sm btn-outline-{{statusColor $s}} {{if eq $s $.Reparacion.Status}}active{{end}}"
+          onclick="cambiarStatus({{$.Reparacion.ID}},'{{$s}}')"
+          title="{{statusLabel $s}}">
+          <i class="bi bi-{{statusIcon $s}}"></i> {{statusLabel $s}}
+        </button>
+        {{end}}
+      </div>
+    </div></div>
+
+    <!-- Timeline -->
+    <div class="card shadow-sm mb-3"><div class="card-body">
+      <h6 class="card-title"><i class="bi bi-clock-history"></i> Historial</h6>
+      <div class="timeline">
+        {{if .Reparacion.Historial}}{{range $i, $h := .Reparacion.Historial}}
+        <div class="timeline-item">
+          <div class="timeline-dot bg-{{statusColor $h.StatusNuevo}}"></div>
+          <div class="timeline-content">
+            <div class="d-flex justify-content-between">
+              <span class="fw-semibold">
+                <span class="badge bg-{{statusColor $h.StatusNuevo}}">{{statusLabel $h.StatusNuevo}}</span>
+                {{if $h.StatusAnterior}}<small class="text-muted">(desde {{statusLabel $h.StatusAnterior}})</small>{{end}}
+              </span>
+              <small class="text-muted">{{$h.CreadoEn}}</small>
+            </div>
+            {{if $h.Notas}}<small class="d-block text-muted mt-1">{{$h.Notas}}</small>{{end}}
+            {{if $h.UsuarioNombre}}<small class="text-muted d-block mt-1">— {{$h.UsuarioNombre}}</small>{{end}}
+          </div>
+        </div>
+        {{end}}{{else}}
+        <small class="text-muted">Sin historial aún</small>
+        {{end}}
+      </div>
+    </div></div>
+
+    <!-- Edit form -->
+    <div class="card shadow-sm"><div class="card-body">
+      <h6 class="card-title"><i class="bi bi-pencil"></i> Editar datos</h6>
+      <form method="POST" action="/admin/reparaciones/{{.Reparacion.ID}}">
+        <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label">Cliente</label><input type="text" name="cliente_nombre" class="form-control" value="{{.Reparacion.ClienteNombre}}"></div>
+          <div class="col-md-3"><label class="form-label">Teléfono</label><input type="text" name="cliente_telefono" class="form-control" value="{{.Reparacion.ClienteTelefono}}"></div>
+          <div class="col-md-3"><label class="form-label">Email</label><input type="email" name="cliente_email" class="form-control" value="{{.Reparacion.ClienteEmail}}"></div>
+          <div class="col-md-4"><label class="form-label">Modelo</label><input type="text" name="modelo_texto" class="form-control" value="{{.Reparacion.ModeloTexto}}"></div>
+          <div class="col-md-3"><label class="form-label">Serie</label><input type="text" name="numero_serie" class="form-control" value="{{.Reparacion.NumeroSerie}}"></div>
+          <div class="col-md-2"><label class="form-label">IMEI</label><input type="text" name="imei" class="form-control" value="{{.Reparacion.IMEI}}"></div>
+          <div class="col-md-3"><label class="form-label">Password</label><input type="text" name="password_equipo" class="form-control" value="{{.Reparacion.PasswordEquipo}}"></div>
+          <div class="col-md-6"><label class="form-label">Condición física</label><input type="text" name="condicion_fisica" class="form-control" value="{{.Reparacion.CondicionFisica}}"></div>
+          <div class="col-md-6"><label class="form-label">Accesorios</label><input type="text" name="accesorios" class="form-control" value="{{.Reparacion.Accesorios}}"></div>
+          <div class="col-md-6"><label class="form-label">Fecha prometida</label><input type="date" name="fecha_prometida" class="form-control" value="{{.Reparacion.FechaPrometida}}"></div>
+          <div class="col-12"><label class="form-label">Falla reportada</label><textarea name="falla_reportada" class="form-control" rows="2">{{.Reparacion.FallaReportada}}</textarea></div>
+          <div class="col-12"><label class="form-label">Diagnóstico</label><textarea name="diagnostico" class="form-control" rows="2">{{.Reparacion.Diagnostico}}</textarea></div>
+          <div class="col-md-6"><label class="form-label">Notas cliente</label><textarea name="notas_cliente" class="form-control" rows="2">{{.Reparacion.NotasCliente}}</textarea></div>
+          <div class="col-md-6"><label class="form-label">Notas internas</label><textarea name="notas_internas" class="form-control" rows="2">{{.Reparacion.NotasInternas}}</textarea></div>
+          <div class="col-md-3"><label class="form-label">Costo diagnóstico</label><div class="input-group"><span class="input-group-text">$</span><input type="number" name="costo_diagnostico" step="0.01" class="form-control" value="{{printf "%.2f" .Reparacion.CostoDiagnostico}}"></div></div>
+          <div class="col-md-3"><label class="form-label">Anticipo</label><div class="input-group"><span class="input-group-text">$</span><input type="number" name="anticipo" step="0.01" class="form-control" value="{{printf "%.2f" .Reparacion.Anticipo}}"></div></div>
+          <div class="col-12"><button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Guardar cambios</button></div>
+        </div>
+      </form>
+    </div></div>
+  </div>
+
+  <!-- Right column: parts, files, QR, totals -->
+  <div class="col-md-4">
+    <!-- Totals -->
+    <div class="card shadow-sm mb-3"><div class="card-body">
+      <h6 class="card-title"><i class="bi bi-currency-dollar"></i> Totales</h6>
+      <div class="d-flex justify-content-between mb-1"><small>Diagnóstico:</small><strong>${{printf "%.2f" .Reparacion.CostoDiagnostico}}</strong></div>
+      <div class="d-flex justify-content-between mb-1"><small>Reparación:</small><strong>${{printf "%.2f" .Reparacion.CostoReparacion}}</strong></div>
+      <div class="d-flex justify-content-between mb-1"><small>Anticipo:</small><strong>${{printf "%.2f" .Reparacion.Anticipo}}</strong></div>
+      <hr class="my-1">
+      <div class="d-flex justify-content-between"><strong>Total:</strong><strong class="text-success">${{printf "%.2f" .Reparacion.Total}}</strong></div>
+    </div></div>
+
+    <!-- QR / Portal link -->
+    <div class="card shadow-sm mb-3"><div class="card-body text-center">
+      <h6 class="card-title"><i class="bi bi-qr-code"></i> Portal del cliente</h6>
+      <div id="qrcode" class="d-inline-block mb-2"></div>
+      <div><small class="text-muted">Escanea para ver status</small></div>
+      <div class="mt-2"><input type="text" class="form-control form-control-sm" id="repPublicUrl" value="/r/{{.Reparacion.Token}}" readonly onclick="this.select()"></div>
+      <div class="mt-2">
+        <a href="/r/{{.Reparacion.Token}}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-box-arrow-up-right"></i> Abrir portal</a>
+      </div>
+    </div></div>
+
+    <!-- Parts used -->
+    <div class="card shadow-sm mb-3"><div class="card-body">
+      <h6 class="card-title"><i class="bi bi-box"></i> Piezas usadas</h6>
+      {{if .Reparacion.PiezasUsadas}}
+      <table class="table table-sm small mb-2">
+        <thead><tr><th>Pieza</th><th>Cant</th><th>Subtotal</th><th></th></tr></thead>
+        <tbody>{{range .Reparacion.PiezasUsadas}}
+          <tr>
+            <td>{{.PiezaNombre}} <small class="text-muted">({{.PiezaCodigo}})</small></td>
+            <td>{{.Cantidad}}</td>
+            <td>${{printf "%.2f" .Subtotal}}</td>
+            <td><button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="quitarPieza({{$.Reparacion.ID}},{{.ID}})"><i class="bi bi-x"></i></button></td>
+          </tr>
+        {{end}}</tbody>
+      </table>
+      {{else}}<small class="text-muted">Sin piezas registradas</small>{{end}}
+      <hr class="my-2">
+      <form onsubmit="agregarPieza(event, {{.Reparacion.ID}})">
+        <div class="input-group input-group-sm">
+          <select class="form-select" id="piezaSelect">
+            <option value="">Agregar pieza...</option>
+            {{range .Piezas}}<option value="{{.ID}}" data-precio="{{.Precio}}">{{.Nombre}} ({{.Codigo}}) — ${{printf "%.2f" .Precio}} — Stock: {{.Stock}}</option>{{end}}
+          </select>
+          <input type="number" id="piezaCant" class="form-control" style="width:50px" value="1" min="1">
+          <button class="btn btn-outline-primary" type="submit"><i class="bi bi-plus"></i></button>
+        </div>
+      </form>
+    </div></div>
+
+    <!-- Files -->
+    <div class="card shadow-sm"><div class="card-body">
+      <h6 class="card-title"><i class="bi bi-paperclip"></i> Archivos</h6>
+      <div id="fileList">
+        {{if .Reparacion.Archivos}}
+        <div class="d-flex flex-wrap gap-2 mb-2">
+          {{range .Reparacion.Archivos}}
+          <div class="file-item" style="position:relative">
+            {{if eq .Tipo "pdf"}}
+            <a href="{{.URL}}" target="_blank" class="btn btn-sm btn-outline-danger"><i class="bi bi-file-pdf"></i> {{.Nombre}}</a>
+            {{else}}
+            <a href="{{.URL}}" target="_blank"><img src="{{.URL}}" style="width:60px;height:60px;object-fit:cover;border-radius:8px"></a>
+            {{end}}
+            <button class="btn btn-sm btn-outline-danger py-0 px-1" style="position:absolute;top:-6px;right:-6px" onclick="quitarArchivo({{$.Reparacion.ID}},{{.ID}})"><i class="bi bi-x"></i></button>
+          </div>
+          {{end}}
+        </div>
+        {{else}}<small class="text-muted">Sin archivos</small>{{end}}
+      </div>
+      <form onsubmit="subirArchivo(event, {{.Reparacion.ID}})">
+        <div class="input-group input-group-sm">
+          <input type="file" class="form-control" id="fileInput" accept="image/*,.pdf">
+          <button class="btn btn-outline-primary" type="submit"><i class="bi bi-upload"></i></button>
+        </div>
+      </form>
+    </div></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+// ─── QR + public URL ───
+const origin = window.location.origin;
+document.getElementById('repPublicUrl').value = origin + '/r/{{.Reparacion.Token}}';
+new QRCode(document.getElementById('qrcode'), {
+  text: window.location.origin + '/r/{{.Reparacion.Token}}',
+  width: 140,
+  height: 140,
+  colorDark: '#2D3436',
+  colorLight: '#ffffff',
+  correctLevel: QRCode.CorrectLevel.M
+});
+
+// ─── Cambiar status ───
+function cambiarStatus(id, status) {
+  if(!confirm('¿Cambiar a "'+status+'"?')) return;
+  const fd = new FormData();
+  fd.append('status', status);
+  fetch('/admin/reparaciones/'+id+'/status', {method:'POST', body:fd})
+  .then(r=>r.json()).then(d=>{
+    if(d.success) location.reload();
+    else alert(d.error);
+  });
+}
+
+// ─── Agregar pieza ───
+function agregarPieza(e, id) {
+  e.preventDefault();
+  const sel = document.getElementById('piezaSelect');
+  const cant = document.getElementById('piezaCant');
+  if(!sel.value) return;
+  const fd = new FormData();
+  fd.append('pieza_id', sel.value);
+  fd.append('cantidad', cant.value || 1);
+  fetch('/admin/reparaciones/'+id+'/piezas', {method:'POST', body:fd})
+  .then(r=>r.json()).then(d=>{
+    if(d.success) location.reload();
+    else alert(d.error);
+  });
+}
+
+// ─── Quitar pieza ───
+function quitarPieza(id, pid) {
+  if(!confirm('¿Quitar esta pieza?')) return;
+  fetch('/admin/reparaciones/'+id+'/piezas/'+pid, {method:'DELETE'})
+  .then(r=>r.json()).then(d=>{ if(d.success) location.reload(); });
+}
+
+// ─── Subir archivo ───
+function subirArchivo(e, id) {
+  e.preventDefault();
+  const input = document.getElementById('fileInput');
+  if(!input.files.length) return;
+  const fd = new FormData();
+  fd.append('file', input.files[0]);
+  fetch('/admin/reparaciones/'+id+'/archivos', {method:'POST', body:fd})
+  .then(r=>r.json()).then(d=>{ if(d.success) location.reload(); else alert(d.error); });
+}
+
+// ─── Quitar archivo ───
+function quitarArchivo(id, aid) {
+  if(!confirm('¿Eliminar archivo?')) return;
+  fetch('/admin/reparaciones/'+id+'/archivos/'+aid, {method:'DELETE'})
+  .then(r=>r.json()).then(d=>{ if(d.success) location.reload(); });
+}
+</script>
+
+<style>
+.timeline { position: relative; padding-left: 24px; }
+.timeline::before {
+  content: ''; position: absolute; left: 8px; top: 4px; bottom: 4px;
+  width: 2px; background: #e9ecef;
+}
+.timeline-item { position: relative; padding-bottom: 16px; }
+.timeline-item:last-child { padding-bottom: 0; }
+.timeline-dot {
+  position: absolute; left: -20px; top: 4px;
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid #fff;
+}
+.timeline-content { padding-left: 4px; }
+</style>
+{{end}}
