@@ -24,6 +24,7 @@ body { background: linear-gradient(135deg, #2c3e50, #3498db); min-height: 100vh;
   </div>
   {{if .Error}}<div class="alert alert-danger py-2 small">Usuario o contraseña incorrectos</div>{{end}}
   <form method="POST" action="/login">
+    <input type="hidden" name="_csrf" value="{{.CSRF}}">
     <div class="mb-3">
       <label class="form-label small fw-semibold">Usuario</label>
       <input type="text" name="usuario" class="form-control" required autofocus>

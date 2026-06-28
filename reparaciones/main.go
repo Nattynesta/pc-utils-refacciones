@@ -225,7 +225,14 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
-	mux.HandleFunc("/taller", func(w http.ResponseWriter, r *http.Request) {
+
+	// Auth
+	mux.HandleFunc("GET /login", handleLoginPage)
+	mux.HandleFunc("POST /login", handleLogin)
+	mux.HandleFunc("POST /logout", handleLogout)
+
+	// TallerPro SPA (main dashboard)
+	serveTaller := func(w http.ResponseWriter, r *http.Request) {
 		d, err := staticFS.ReadFile("static/tallerpro.html")
 		if err != nil {
 			http.Error(w, "Not found", http.StatusNotFound)
@@ -233,15 +240,9 @@ func main() {
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Write(d)
-	})
-
-	// Auth
-	mux.HandleFunc("GET /login", handleLoginPage)
-	mux.HandleFunc("POST /login", handleLogin)
-	mux.HandleFunc("POST /logout", handleLogout)
-
-	// Dashboard & repairs
-	mux.HandleFunc("GET /{$}", requireAuth(handleDashboard))
+	}
+	mux.HandleFunc("GET /{$}", requireAuth(serveTaller))
+	mux.HandleFunc("GET /taller", requireAuth(serveTaller))
 	mux.HandleFunc("GET /kanban", requireAuth(handleKanban))
 	mux.HandleFunc("GET /nueva", requireAuth(handleNuevaPage))
 	mux.HandleFunc("POST /nueva", requireAuth(handleNuevaCrear))
@@ -431,7 +432,7 @@ func sessionUser(r *http.Request) int {
 func handleLoginPage(w http.ResponseWriter, r *http.Request) {
 	loginTpl := template.Must(template.New("login.html").Parse(readFile("templates/login.html")))
 	err := r.URL.Query().Get("error")
-	loginTpl.Execute(w, map[string]string{"Error": err})
+	loginTpl.Execute(w, map[string]interface{}{"Error": err, "CSRF": generateCSRFToken()})
 }
 
 func handleLogin(w http.ResponseWriter, r *http.Request) {
