@@ -225,6 +225,15 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
+	mux.HandleFunc("/taller", func(w http.ResponseWriter, r *http.Request) {
+		d, err := staticFS.ReadFile("static/tallerpro.html")
+		if err != nil {
+			http.Error(w, "Not found", http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write(d)
+	})
 
 	// Auth
 	mux.HandleFunc("GET /login", handleLoginPage)
@@ -232,7 +241,7 @@ func main() {
 	mux.HandleFunc("POST /logout", handleLogout)
 
 	// Dashboard & repairs
-	mux.HandleFunc("GET /", requireAuth(handleDashboard))
+	mux.HandleFunc("GET /{$}", requireAuth(handleDashboard))
 	mux.HandleFunc("GET /kanban", requireAuth(handleKanban))
 	mux.HandleFunc("GET /nueva", requireAuth(handleNuevaPage))
 	mux.HandleFunc("POST /nueva", requireAuth(handleNuevaCrear))

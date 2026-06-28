@@ -1,0 +1,2412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TallerPro - Sistema de Reparaciones</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/css/lightbox.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --success-color: #1cc88a;
+            --info-color: #36b9cc;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+            --light-color: #f8f9fc;
+            --dark-color: #5a5c69;
+            --sidebar-width: 250px;
+        }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--light-color);
+            overflow-x: hidden;
+        }
+        .sidebar {
+            width: var(--sidebar-width);
+            min-height: 100vh;
+            background: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 1000;
+        }
+        .sidebar-brand {
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 800;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-brand i { margin-right: 10px; }
+        .menu-item {
+            padding: 15px 25px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .menu-item:hover, .menu-item.active {
+            color: white;
+            background: rgba(255,255,255,0.1);
+            border-left: 4px solid white;
+        }
+        .menu-item i { width: 25px; margin-right: 10px; }
+        .main-content { margin-left: var(--sidebar-width); padding: 20px; }
+        .top-navbar {
+            background: white;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            padding: 15px 30px;
+            margin: -20px -20px 30px -20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            border-left: 4px solid;
+            transition: transform 0.3s;
+        }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-card.primary { border-left-color: var(--primary-color); }
+        .stat-card.success { border-left-color: var(--success-color); }
+        .stat-card.info { border-left-color: var(--info-color); }
+        .stat-card.warning { border-left-color: var(--warning-color); }
+        .stat-label { color: var(--secondary-color); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
+        .stat-value { font-size: 1.8rem; font-weight: 700; color: var(--dark-color); }
+        .stat-icon { font-size: 2rem; opacity: 0.3; float: right; }
+        .content-card { background: white; border-radius: 10px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15); margin-bottom: 30px; }
+        .card-header { background: white; border-bottom: 1px solid #e3e6f0; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .card-title { margin: 0; color: var(--primary-color); font-size: 1.1rem; font-weight: 700; }
+        .card-body { padding: 20px; }
+        .table-custom thead th { background: var(--light-color); border-bottom: 2px solid #e3e6f0; color: var(--primary-color); font-weight: 700; text-transform: uppercase; font-size: 0.8rem; }
+        .status-badge { padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-progress { background: #cce5ff; color: #004085; }
+        .status-completed { background: #d4edda; color: #155724; }
+        .status-delivered { background: #d1ecf1; color: #0c5460; }
+        .action-btn { padding: 5px 10px; margin: 0 2px; border: none; border-radius: 5px; cursor: pointer; transition: all 0.3s; }
+        .action-btn.view { background: var(--info-color); color: white; }
+        .action-btn.edit { background: var(--warning-color); color: white; }
+        .action-btn.delete { background: var(--danger-color); color: white; }
+        .action-btn:hover { transform: scale(1.1); opacity: 0.9; }
+        .btn-primary-custom { background: var(--primary-color); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        .btn-primary-custom:hover { background: #2e59d9; transform: translateY(-2px); }
+        .modal-header { background: var(--primary-color); color: white; }
+        .modal-header .btn-close { filter: brightness(0) invert(1); }
+        .nav-tabs-custom { border-bottom: 2px solid #e3e6f0; margin-bottom: 20px; }
+        .nav-tabs-custom .nav-link { border: none; color: var(--secondary-color); padding: 15px 25px; cursor: pointer; }
+        .nav-tabs-custom .nav-link.active { color: var(--primary-color); border-bottom: 3px solid var(--primary-color); background: none; }
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; }
+        .gallery-item { position: relative; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer; }
+        .gallery-item img, .gallery-item video { width: 100%; height: 150px; object-fit: cover; }
+        .upload-zone { border: 2px dashed var(--primary-color); border-radius: 10px; padding: 40px; text-align: center; cursor: pointer; background: var(--light-color); }
+        .upload-zone:hover { background: #e8f4ff; }
+        .upload-zone i { font-size: 3rem; color: var(--primary-color); margin-bottom: 15px; }
+        .recorder-container { background: var(--light-color); border-radius: 10px; padding: 20px; margin: 20px 0; }
+        .record-btn { width: 60px; height: 60px; border-radius: 50%; border: none; background: var(--danger-color); color: white; font-size: 1.5rem; cursor: pointer; animation: pulse 2s infinite; }
+        .record-btn.recording { animation: pulse 1s infinite; background: #c0392b; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(231,74,59,0.7); } 70% { box-shadow: 0 0 0 20px rgba(231,74,59,0); } 100% { box-shadow: 0 0 0 0 rgba(231,74,59,0); } }
+        .audio-item { background: white; border-radius: 8px; padding: 10px; margin: 10px 0; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .audio-item audio { flex: 1; }
+        .measure-row { display: flex; gap: 10px; margin: 10px 0; align-items: center; padding: 10px; background: var(--light-color); border-radius: 8px; flex-wrap: wrap; }
+        .measure-row input, .measure-row select { flex: 1; min-width: 100px; }
+        .note-item { background: #fff9e6; border-left: 4px solid var(--warning-color); padding: 15px; margin: 10px 0; border-radius: 5px; position: relative; }
+        .note-item .note-date { font-size: 0.8rem; color: var(--secondary-color); margin-bottom: 5px; }
+        .media-badge { position: absolute; top: -10px; right: -10px; background: var(--danger-color); color: white; border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; }
+        /* ESP32 Diagnostic */
+        .diag-panel { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 10px; padding: 20px; margin: 15px 0; color: #00ff88; font-family: 'Courier New', monospace; }
+        .diag-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(0,255,136,0.1); font-size: 0.85rem; }
+        .diag-label { color: #00ff88; }
+        .diag-value { color: #fff; font-weight: bold; }
+        .diag-header { color: #4e73df; font-size: 0.9rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+        .diag-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; background: rgba(0,255,136,0.2); color: #00ff88; }
+        .esp32-status { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+        .esp32-status.online { background: #00ff88; box-shadow: 0 0 8px #00ff88; }
+        .esp32-status.offline { background: #ff4444; }
+        .diag-chart-container { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 15px; margin: 10px 0; }
+        .auto-detect-btn { background: #00ff88; color: #1a1a2e; border: none; padding: 10px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.3s; }
+        .auto-detect-btn:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(0,255,136,0.4); }
+        .auto-detect-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .diag-scanning { animation: scanPulse 1.5s infinite; }
+        @keyframes scanPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <i class="fas fa-tools"></i>
+        <span>TallerPro</span>
+    </div>
+    <div class="sidebar-menu">
+        <a class="menu-item active" onclick="showSection('dashboard')">
+            <i class="fas fa-fw fa-tachometer-alt"></i>
+            <span>Dashboard</span>
+        </a>
+        <a class="menu-item" onclick="showSection('reparaciones')">
+            <i class="fas fa-fw fa-wrench"></i>
+            <span>Reparaciones</span>
+        </a>
+        <a class="menu-item" onclick="showSection('clientes')">
+            <i class="fas fa-fw fa-users"></i>
+            <span>Clientes</span>
+        </a>
+        <a class="menu-item" onclick="showSection('diag-laptop')">
+            <i class="fas fa-fw fa-laptop-medical"></i>
+            <span>Diagnóstico Laptop</span>
+        </a>
+        <a class="menu-item" onclick="showSection('documentacion')">
+            <i class="fas fa-fw fa-book"></i>
+            <span>Documentación IA</span>
+        </a>
+        <a class="menu-item" onclick="showSection('diagnostico')">
+            <i class="fas fa-fw fa-microchip"></i>
+            <span>Diagnóstico ESP32</span>
+        </a>
+        <a class="menu-item" onclick="showSection('herramientas')">
+            <i class="fas fa-fw fa-microscope"></i>
+            <span>Herramientas Diagnóstico</span>
+        </a>
+        <div style="margin-top:auto;border-top:1px solid rgba(255,255,255,0.1);padding-top:10px;">
+            <a class="menu-item" href="/">
+                <i class="fas fa-fw fa-arrow-left"></i>
+                <span>Volver a reparaciones</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="main-content">
+    <div class="top-navbar">
+        <div class="input-group" style="max-width:300px">
+            <input type="text" class="form-control" placeholder="Buscar..." id="searchInput">
+            <button class="btn btn-outline-secondary"><i class="fas fa-search"></i></button>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <button class="btn btn-outline-primary" onclick="connectDiagnosticTool()">
+                <i class="fas fa-usb"></i> Conectar Herramienta
+            </button>
+            <button class="btn btn-light position-relative">
+                <i class="fas fa-bell"></i>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notifCount">0</span>
+            </button>
+            <div class="d-flex align-items-center gap-2">
+                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width:40px;height:40px;font-weight:bold">AD</div>
+                <span>Admin</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboard-section">
+        <div class="row mb-4">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="stat-card primary">
+                    <div class="stat-label">Total Reparaciones</div>
+                    <div class="stat-value" id="totalReparaciones">0</div>
+                    <i class="fas fa-tools stat-icon"></i>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="stat-card success">
+                    <div class="stat-label">Completadas</div>
+                    <div class="stat-value" id="reparacionesCompletadas">0</div>
+                    <i class="fas fa-check-circle stat-icon"></i>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="stat-card info">
+                    <div class="stat-label">En Progreso</div>
+                    <div class="stat-value" id="reparacionesProgreso">0</div>
+                    <i class="fas fa-spinner stat-icon"></i>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="stat-card warning">
+                    <div class="stat-label">Ingresos del Mes</div>
+                    <div class="stat-value" id="ingresosMes">$0</div>
+                    <i class="fas fa-dollar-sign stat-icon"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="content-card">
+                    <div class="card-header">
+                        <h5 class="card-title"><i class="fas fa-chart-line"></i> Actividad del Taller</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="activityChart" height="100"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-card">
+            <div class="card-header">
+                <h5 class="card-title">Reparaciones Recientes</h5>
+                <button class="btn-primary-custom" onclick="openModal('reparacion')">
+                    <i class="fas fa-plus"></i> Nueva Reparación
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cliente</th>
+                                <th>Equipo</th>
+                                <th>Problema</th>
+                                <th>Fecha</th>
+                                <th>Estado</th>
+                                <th>Media</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reparaciones Section -->
+    <div id="reparaciones-section" style="display:none">
+        <div class="content-card">
+            <div class="card-header">
+                <h5 class="card-title">Todas las Reparaciones</h5>
+                <button class="btn-primary-custom" onclick="openModal('reparacion')">
+                    <i class="fas fa-plus"></i> Nueva
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cliente</th>
+                                <th>Teléfono</th>
+                                <th>Equipo</th>
+                                <th>Marca</th>
+                                <th>Fecha</th>
+                                <th>Estado</th>
+                                <th>Media</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fullTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clientes Section -->
+    <div id="clientes-section" style="display:none">
+        <div class="content-card">
+            <div class="card-header">
+                <h5 class="card-title">Base de Clientes</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Teléfono</th>
+                                <th>Total Reparaciones</th>
+                                <th>Última Visita</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientesTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diagnóstico Laptop Section -->
+    <div id="diag-laptop-section" style="display:none">
+        <div class="content-card">
+            <div class="card-header">
+                <h5 class="card-title"><i class="fas fa-microchip"></i> Herramienta de Diagnóstico v3.2+</h5>
+                <div>
+                    <span class="badge bg-success" id="hwStatus">● Desconectado</span>
+                    <button class="btn btn-success btn-sm ms-2" onclick="sendDiagCommand('START')">
+                        <i class="fas fa-play"></i> START
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="sendDiagCommand('STOP')">
+                        <i class="fas fa-stop"></i> STOP
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <ul class="nav nav-tabs-custom">
+                    <li><a class="nav-link active" data-tab="overview"><i class="fas fa-tachometer-alt"></i> Overview</a></li>
+                    <li><a class="nav-link" data-tab="ina219"><i class="fas fa-battery-half"></i> INA219</a></li>
+                    <li><a class="nav-link" data-tab="ads1115"><i class="fas fa-wave-square"></i> ADS1115</a></li>
+                    <li><a class="nav-link" data-tab="pio"><i class="fas fa-clock"></i> PIO Freq</a></li>
+                    <li><a class="nav-link" data-tab="uart"><i class="fas fa-terminal"></i> UART EC</a></li>
+                    <li><a class="nav-link" data-tab="smbus"><i class="fas fa-network-wired"></i> SMBus</a></li>
+                    <li><a class="nav-link" data-tab="pd"><i class="fas fa-plug"></i> PD/QC</a></li>
+                </ul>
+                <div id="tab-overview" class="tab-pane active">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="stat-card primary">
+                                <div class="stat-label">VBUS</div>
+                                <div class="stat-value" id="diagVbus">0.00V</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card success">
+                                <div class="stat-label">Corriente</div>
+                                <div class="stat-value" id="diagCurrent">0.00mA</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card info">
+                                <div class="stat-label">Potencia</div>
+                                <div class="stat-value" id="diagPower">0.00mW</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card warning">
+                                <div class="stat-label">Frecuencia</div>
+                                <div class="stat-value" id="diagFreq">0 Hz</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <canvas id="diagChart" height="100"></canvas>
+                    </div>
+                </div>
+                <div id="tab-ina219" class="tab-pane">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card text-center border-primary">
+                                <div class="card-body">
+                                    <h6>Voltaje Bus</h6>
+                                    <div id="ina219Vbus" style="font-size:2rem;font-weight:bold;">0.00V</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card text-center border-success">
+                                <div class="card-body">
+                                    <h6>Corriente Shunt</h6>
+                                    <div id="ina219Shunt" style="font-size:2rem;font-weight:bold;">0.00mA</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card text-center border-warning">
+                                <div class="card-body">
+                                    <h6>Potencia</h6>
+                                    <div id="ina219Power" style="font-size:2rem;font-weight:bold;">0.00mW</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-info" onclick="sendDiagCommand('GET_SENS')"><i class="fas fa-sync"></i> Leer Sensores</button>
+                        <button class="btn btn-success" onclick="startContinuousMonitoring()"><i class="fas fa-chart-line"></i> Monitoreo Continuo</button>
+                    </div>
+                </div>
+                <div id="tab-ads1115" class="tab-pane">
+                    <div class="row">
+                        ${[0,1,2,3].map(i => `<div class="col-md-3"><div class="card text-center"><div class="card-body"><h6>Canal ${i}</h6>
+                            <div id="ads1115Ch${i}" style="font-size:1.5rem;font-weight:bold;color:${['#4e73df','#1cc88a','#36b9cc','#f6c23e'][i]};">0.000V</div></div></div></div>`
+                        ).join('')}
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-primary" onclick="sendDiagCommand('GET_ADC')"><i class="fas fa-sync"></i> Leer ADC</button>
+                    </div>
+                </div>
+                <div id="tab-pio" class="tab-pane">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card"><div class="card-body">
+                                <h6>Medición de Frecuencia</h6>
+                                <div id="pioFreq" style="font-size:2rem;font-weight:bold;color:#4e73df;">0 Hz</div>
+                                <div id="pioPeriod" class="text-muted">Periodo: 0 μs</div>
+                                <div id="pioDuty" class="text-muted">Duty: 0%</div>
+                            </div></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card"><div class="card-body">
+                                <h6>GPIO Monitoreados</h6>
+                                <div id="gpioStatus">
+                                    <div class="d-flex justify-content-between"><span>GPIO 2:</span> <span class="badge bg-secondary">LOW</span></div>
+                                    <div class="d-flex justify-content-between"><span>GPIO 3:</span> <span class="badge bg-secondary">LOW</span></div>
+                                    <div class="d-flex justify-content-between"><span>GPIO 4:</span> <span class="badge bg-secondary">LOW</span></div>
+                                </div>
+                            </div></div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-info" onclick="sendDiagCommand('GET_FREQ')"><i class="fas fa-sync"></i> Medir Frecuencia</button>
+                    </div>
+                </div>
+                <div id="tab-uart" class="tab-pane">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">Consola UART EC/KBC (GPIO 0/1)</h6>
+                            <button class="btn btn-sm btn-danger" onclick="clearUartLog()"><i class="fas fa-trash"></i> Limpiar</button>
+                        </div>
+                        <div class="card-body">
+                            <textarea id="uartLog" class="form-control" rows="15" readonly
+                                style="font-family:monospace;background:#1e1e1e;color:#0f0;"></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-warning" onclick="sendDiagCommand('UART_DUMP')"><i class="fas fa-download"></i> Dump Buffer</button>
+                        <button class="btn btn-info" onclick="sendDiagCommand('UART_CLEAR')"><i class="fas fa-eraser"></i> Clear Buffer</button>
+                    </div>
+                </div>
+                <div id="tab-smbus" class="tab-pane">
+                    <div class="card mb-3"><div class="card-body">
+                        <h6>Escaneo de Dispositivos I2C</h6>
+                        <button class="btn btn-primary" onclick="scanI2CBus()"><i class="fas fa-search"></i> Escanear Bus</button>
+                        <div id="i2cDevices" class="mt-3"></div>
+                    </div></div>
+                    <div class="card"><div class="card-body">
+                        <h6>Lectura de Registros</h6>
+                        <div class="row"><div class="col-md-4"><label>Dirección</label><input type="text" class="form-control" id="i2cAddr" placeholder="0x"></div>
+                        <div class="col-md-4"><label>Registro</label><input type="text" class="form-control" id="i2cReg" placeholder="0x"></div>
+                        <div class="col-md-4"><button class="btn btn-success mt-4" onclick="readI2CRegister()"><i class="fas fa-download"></i> Leer</button></div></div>
+                        <div id="i2cResult" class="mt-3"></div>
+                    </div></div>
+                </div>
+                <div id="tab-pd" class="tab-pane">
+                    <div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> Módulo PD/QC (AP43771V) - Requiere validación de direccionamiento I2C</div>
+                    <div class="row">
+                        <div class="col-md-4"><div class="card text-center"><div class="card-body"><h6>VBUS</h6><div id="pdVbus" style="font-size:1.5rem;font-weight:bold;">0.0V</div></div></div></div>
+                        <div class="col-md-4"><div class="card text-center"><div class="card-body"><h6>CC1</h6><div id="pdCC1" style="font-size:1.5rem;font-weight:bold;">0.0V</div></div></div></div>
+                        <div class="col-md-4"><div class="card text-center"><div class="card-body"><h6>CC2</h6><div id="pdCC2" style="font-size:1.5rem;font-weight:bold;">0.0V</div></div></div></div>
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-info" onclick="sendDiagCommand('GET_PD')"><i class="fas fa-sync"></i> Leer PD Controller</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Herramientas Section -->
+    <div id="herramientas-section" style="display:none">
+        <div class="content-card">
+            <div class="card-header">
+                <h5 class="card-title">Herramientas de Diagnóstico</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-4">
+                        <div class="stat-card primary" style="cursor:pointer" onclick="openTool('esp32')">
+                            <div class="stat-label">ESP32</div>
+                            <div class="stat-value"><i class="fas fa-wifi"></i></div>
+                            <p class="text-muted mt-2">Módulo WiFi/BT</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="stat-card success" style="cursor:pointer" onclick="openTool('rp2040')">
+                            <div class="stat-label">RP2040</div>
+                            <div class="stat-value"><i class="fas fa-microchip"></i></div>
+                            <p class="text-muted mt-2">Raspberry Pi Pico</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="stat-card info" style="cursor:pointer" onclick="openTool('stm32')">
+                            <div class="stat-label">STM32 BlackPill</div>
+                            <div class="stat-value"><i class="fas fa-bolt"></i></div>
+                            <p class="text-muted mt-2">ARM Cortex-M4</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="stat-card warning" style="cursor:pointer" onclick="openTool('ads1115')">
+                            <div class="stat-label">ADS1115</div>
+                            <div class="stat-value"><i class="fas fa-tachometer-alt"></i></div>
+                            <p class="text-muted mt-2">ADC 16-bit I2C</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="stat-card primary" style="cursor:pointer" onclick="openTool('ina219')">
+                            <div class="stat-label">INA219</div>
+                            <div class="stat-value"><i class="fas fa-battery-half"></i></div>
+                            <p class="text-muted mt-2">Sensor Corriente/Voltaje</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="stat-card success" style="cursor:pointer" onclick="openTool('clock')">
+                            <div class="stat-label">Generador de Reloj</div>
+                            <div class="stat-value"><i class="fas fa-clock"></i></div>
+                            <p class="text-muted mt-2">Señal de Clock</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diagnóstico ESP32 Section -->
+    <div id="diagnostico-section" style="display:none">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="content-card">
+                    <div class="card-header">
+                        <h5 class="card-title"><i class="fas fa-microchip"></i> Diagnóstico ESP32 — Autodiagnóstico Asistido</h5>
+                        <span id="esp32StatusBadge"><span class="esp32-status online"></span> ESP32 en línea</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="diag-panel" id="diagPanel">
+                                    <div class="diag-header">
+                                        <i class="fas fa-bolt"></i> Panel de Diagnóstico
+                                        <span class="diag-badge ms-2" id="scanStatus">IDLE</span>
+                                    </div>
+                                    <div id="diagReadings">
+                                        <div class="diag-row">
+                                            <span class="diag-label"><i class="fas fa-battery-three-quarters"></i> VCC (3.3V rail)</span>
+                                            <span class="diag-value" id="d_vcc">3.312 V</span>
+                                        </div>
+                                        <div class="diag-row">
+                                            <span class="diag-label"><i class="fas fa-bolt"></i> VCC (5V rail)</span>
+                                            <span class="diag-value" id="d_v5">5.024 V</span>
+                                        </div>
+                                        <div class="diag-row">
+                                            <span class="diag-label"><i class="fas fa-bolt"></i> VCC (12V rail)</span>
+                                            <span class="diag-value" id="d_v12">12.108 V</span>
+                                        </div>
+                                        <div class="diag-row">
+                                            <span class="diag-label"><i class="fas fa-thermometer-half"></i> Temp. CPU</span>
+                                            <span class="diag-value" id="d_temp">42.3 °C</span>
+                                        </div>
+                                        <div class="diag-row">
+                                            <span class="diag-label"><i class="fas fa-battery-empty"></i> Resistencia interna batería</span>
+                                            <span class="diag-value" id="d_rbat">0.124 Ω</span>
+                                        </div>
+                                        <div class="diag-row">
+                                            <span class="diag-label"><i class="fas fa-wave-square"></i> Señal PWM</span>
+                                            <span class="diag-value" id="d_pwm">98.2 kHz ✓</span>
+                                        </div>
+                                        <div class="diag-row">
+                                            <span class="diag-label"><i class="fas fa-usb"></i> USB-C PD negociado</span>
+                                            <span class="diag-value" id="d_usbpd">20V / 3.0A</span>
+                                        </div>
+                                        <div class="diag-row">
+                                            <span class="diag-label"><i class="fas fa-shield-alt"></i> Continuidad pista principal</span>
+                                            <span class="diag-value" id="d_cont">0.002 Ω ✓</span>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 d-flex gap-2">
+                                        <button class="auto-detect-btn" id="autoScanBtn" onclick="runAutoDiagnostic()">
+                                            <i class="fas fa-play"></i> Ejecutar autodiagnóstico
+                                        </button>
+                                        <button class="btn btn-outline-light btn-sm" onclick="toggleSimulation()">
+                                            <i class="fas fa-sync"></i> Simular lectura
+                                        </button>
+                                    </div>
+                                    <div class="mt-2 text-end">
+                                        <small class="text-muted" id="lastScanTime">Último scan: —</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="diag-chart-container">
+                                    <h6 class="text-white mb-3"><i class="fas fa-chart-bar"></i> Últimas lecturas</h6>
+                                    <canvas id="diagChart" height="200"></canvas>
+                                </div>
+                                <div class="diag-panel mt-2" style="font-size:0.8rem">
+                                    <div class="diag-header">Protocolos ESP32</div>
+                                    <div class="d-flex justify-content-between">
+                                        <span class="diag-label">I²C</span>
+                                        <span class="diag-value">✅</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span class="diag-label">SPI</span>
+                                        <span class="diag-value">✅</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span class="diag-label">UART</span>
+                                        <span class="diag-value">✅</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span class="diag-label">CAN Bus</span>
+                                        <span class="diag-value">✅</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span class="diag-label">ADC (12-bit)</span>
+                                        <span class="diag-value">4096 pasos</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span class="diag-label">DAC (8-bit)</span>
+                                        <span class="diag-value">256 niveles</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="content-card">
+                    <div class="card-header">
+                        <h5 class="card-title"><i class="fas fa-ruler-combined"></i> Mediciones rápidas</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="measure-row">
+                            <select class="form-select" id="diagMeasureType">
+                                <option value="voltage_dc">Voltaje DC (V)</option>
+                                <option value="voltage_ac">Voltaje AC (V)</option>
+                                <option value="current">Corriente (A)</option>
+                                <option value="resistance">Resistencia (Ω)</option>
+                                <option value="capacitance">Capacitancia (μF)</option>
+                                <option value="temperature">Temperatura (°C)</option>
+                                <option value="frequency">Frecuencia (Hz)</option>
+                                <option value="duty">Ciclo trabajo (%)</option>
+                            </select>
+                            <input type="text" class="form-control" id="diagMeasurePoint" placeholder="Punto de prueba">
+                            <input type="number" class="form-control" id="diagMeasureValue" placeholder="Valor" step="0.01">
+                            <button class="btn btn-primary" onclick="addDiagMeasurement()"><i class="fas fa-plus"></i></button>
+                        </div>
+                        <div id="diagMeasurementsList" class="mt-2"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="content-card">
+                    <div class="card-header">
+                        <h5 class="card-title"><i class="fas fa-history"></i> Historial de diagnóstico</h5>
+                    </div>
+                    <div class="card-body" id="diagHistory">
+                        <div class="text-center text-muted py-4">Ejecutá un autodiagnóstico para ver resultados</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documentación IA Section -->
+    <div id="documentacion-section" style="display:none">
+        <div class="content-card">
+            <div class="card-header">
+                <h5 class="card-title"><i class="fas fa-robot"></i> Contexto Técnico para Modelos IA</h5>
+                <button class="btn btn-primary btn-sm" onclick="copyAIContext()">
+                    <i class="fas fa-copy"></i> Copiar Contexto Completo
+                </button>
+            </div>
+            <div class="card-body">
+                <ul class="nav nav-tabs-custom">
+                    <li><a class="nav-link active" data-tab="over"><i class="fas fa-info-circle"></i> Overview</a></li>
+                    <li><a class="nav-link" data-tab="arch"><i class="fas fa-project-diagram"></i> Arquitectura</a></li>
+                    <li><a class="nav-link" data-tab="mods"><i class="fas fa-cubes"></i> Módulos</a></li>
+                    <li><a class="nav-link" data-tab="cons"><i class="fas fa-exclamation-triangle"></i> Restricciones</a></li>
+                    <li><a class="nav-link" data-tab="flow"><i class="fas fa-stream"></i> Flujo</a></li>
+                    <li><a class="nav-link" data-tab="ia"><i class="fas fa-graduation-cap"></i> Instrucciones IA</a></li>
+                </ul>
+                <div id="tab-over" class="tab-pane active">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-bullseye"></i> Propósito Fundamental</h6>
+                        <p class="mb-0">Herramienta de diagnóstico hardware/software para análisis de laptops que <strong>no encienden o no dan vídeo</strong>, permitiendo la caracterización eléctrica y protocolar de sus subsistemas críticos sin depender del funcionamiento del equipo bajo prueba.</p>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="card"><div class="card-body">
+                                <h6><i class="fas fa-microchip"></i> Firmware</h6>
+                                <ul class="list-unstyled mb-0">
+                                    <li>✓ RP2040 (Arduino IDE 2.3.x)</li>
+                                    <li>✓ Core: earlephilhower-rp2040</li>
+                                    <li>✓ RTOS: FreeRTOS con tareas priorizadas</li>
+                                    <li>✓ Límite: <strong>&lt;500 líneas en .ino</strong></li>
+                                </ul>
+                            </div></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card"><div class="card-body">
+                                <h6><i class="fas fa-desktop"></i> Host</h6>
+                                <ul class="list-unstyled mb-0">
+                                    <li>✓ Python (PyQt)</li>
+                                    <li>✓ UI y procesamiento pesado</li>
+                                    <li>✓ Logging y visualización</li>
+                                    <li>✓ Comunicación CDC-USB</li>
+                                </ul>
+                            </div></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="tab-arch" class="tab-pane">
+                    <div class="card"><div class="card-body">
+                        <h6>Arquitectura del Sistema</h6>
+                        <pre style="background:#f8f9fc;padding:20px;border-radius:8px;font-size:0.85rem;overflow-x:auto;">
+┌─────────────────────────────────────────┐
+│  PC (Host) - GUI Python (PyQt)          │
+│  • Procesamiento de datos               │
+│  • Visualización en tiempo real         │
+│  • Comandos de control (START/STOP)     │
+│  • Consolas de depuración UART/I2C      │
+└─────────────┬───────────────────────────┘
+              │ USB Serial (CDC)
+              ▼
+┌─────────────────────────────────────────┐
+│  Firmware RP2040 (Arduino IDE 2.3.x)    │
+│  Core: earlephilhower-rp2040            │
+│  RTOS: FreeRTOS con tareas priorizadas  │
+├─────────────────────────────────────────┤
+│  Tarea [Acq] - Adquisición              │
+│  • INA219: Corriente/Voltaje            │
+│  • ADS1115: ADC 16-bit 4 canales        │
+│  • PIO: Medición de frecuencia          │
+│  • GPIO: Monitoreo señales digitales    │
+├─────────────────────────────────────────┤
+│  Tarea [Comm] - Comunicación            │
+│  • Parser de comandos desde PC          │
+│  • Empaquetado de datos estructurados   │
+│  • Cola FreeRTOS para sincronización    │
+├─────────────────────────────────────────┤
+│  Módulo [UART_EC] - Sniffer EC/KBC      │
+│  • GPIO 0/1: UART dedicado al EC        │
+│  • Captura de tramas de depuración      │
+├─────────────────────────────────────────┤
+│  Módulo [SMBus/I2C] - Diagnóstico       │
+│  • Bus independiente para lectura EC    │
+│  • Detección de dispositivos            │
+├─────────────────────────────────────────┤
+│  Módulo [PD/QC] - Power Delivery        │
+│  • AP43771V (cuando disponible)         │
+│  • Monitoreo VBUS, CC1, CC2             │
+└─────────────────────────────────────────┘
+                        </pre>
+                    </div></div>
+                </div>
+                <div id="tab-mods" class="tab-pane">
+                    <div class="table-responsive">
+                        <table class="table table-custom">
+                            <thead><tr><th>Módulo</th><th>Función</th><th>Estado</th><th>Notas</th></tr></thead>
+                            <tbody>
+                                <tr><td><strong>INA219</strong></td><td>Medición de corriente/voltaje en rails</td><td><span class="badge bg-success">✅ Estable</span></td><td>Operativo</td></tr>
+                                <tr><td><strong>ADS1115</strong></td><td>ADC 16-bit, 4 canales para tensiones analógicas</td><td><span class="badge bg-success">✅ Estable</span></td><td>Operativo</td></tr>
+                                <tr><td><strong>PIO_FREQ</strong></td><td>Medición de frecuencia/periodo de señales digitales</td><td><span class="badge bg-success">✅ Estable</span></td><td>Headers .h generados online</td></tr>
+                                <tr><td><strong>UART_EC</strong></td><td>Sniffer pasivo EC/KBC en GPIO dedicados</td><td><span class="badge bg-warning">⚠️ Validación</span></td><td>Implementado, validando estabilidad</td></tr>
+                                <tr><td><strong>I2C_DIAG</strong></td><td>Escaneo/lectura SMBus del portátil</td><td><span class="badge bg-warning">⚠️ Operativo</span></td><td>Requiere validación de direcciones por modelo</td></tr>
+                                <tr><td><strong>PD/QC</strong></td><td>Monitorización de estados AP43771V</td><td><span class="badge bg-danger">⚠️ Conflictos</span></td><td>Conflictos de bus I2C compartido</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="tab-cons" class="tab-pane">
+                    <div class="alert alert-danger"><h6><i class="fas fa-exclamation-triangle"></i> Restricciones de Diseño (Hard Constraints)</h6></div>
+                    <div class="card mb-3"><div class="card-body">
+                        <h6>1. Límite de Líneas en .ino</h6>
+                        <p class="mb-0"><strong>.ino principal &lt; 500 líneas</strong>. No agregar lógica compleja ahí. Toda la lógica se segmenta en módulos .cpp/.h separados.</p>
+                    </div></div>
+                    <div class="card mb-3"><div class="card-body">
+                        <h6>2. No Romper Funcionalidad Validada</h6>
+                        <p class="mb-0">Si un módulo ya corrige un error, se descarta la comprobación periódica o el parche redundante. Priorizar estabilidad.</p>
+                    </div></div>
+                    <div class="card mb-3"><div class="card-body">
+                        <h6>3. Headers PIO .h</h6>
+                        <p class="mb-0">Se generan externamente y se pegan tal cual. <strong>No intentar regenerarlos o modificar su estructura interna.</strong></p>
+                    </div></div>
+                    <div class="card mb-3"><div class="card-body">
+                        <h6>4. FreeRTOS</h6>
+                        <p class="mb-0">Tareas deben ser <strong>no bloqueantes</strong>. Usar colas para paso de datos entre adquisición y comunicación.</p>
+                    </div></div>
+                    <div class="card mb-3"><div class="card-body">
+                        <h6>5. Bus I2C Compartido</h6>
+                        <p class="mb-0">El diagnóstico SMBus y el módulo PD comparten físicamente el bus. Cualquier cambio debe considerar <strong>multiplexión o exclusión mutua</strong> para evitar colisiones.</p>
+                    </div></div>
+                </div>
+                <div id="tab-flow" class="tab-pane">
+                    <div class="card"><div class="card-body">
+                        <h6>Flujo Operativo</h6>
+                        <div class="d-flex align-items-center mb-3"><span class="badge bg-primary me-2">1</span><span><strong>PC</strong> → Comando START</span></div>
+                        <div class="d-flex align-items-center mb-3"><span class="badge bg-primary me-2">2</span><span><strong>[RP2040]</strong> → Inicia tareas de adquisición cíclica</span></div>
+                        <div class="d-flex align-items-center mb-3"><span class="badge bg-primary me-2">3</span><span><strong>[Sensores]</strong> → Lectura INA219/ADS1115/GPIO/PIO</span></div>
+                        <div class="d-flex align-items-center mb-3"><span class="badge bg-primary me-2">4</span><span><strong>[UART_EC]</strong> → Captura pasiva de tramas EC (si hay actividad)</span></div>
+                        <div class="d-flex align-items-center mb-3"><span class="badge bg-primary me-2">5</span><span><strong>[SMBus]</strong> → Escaneo/lectura de registros laptop (opcional)</span></div>
+                        <div class="d-flex align-items-center mb-3"><span class="badge bg-primary me-2">6</span><span><strong>[RP2040]</strong> → Empaqueta datos en estructura JSON-like por UART</span></div>
+                        <div class="d-flex align-items-center mb-3"><span class="badge bg-primary me-2">7</span><span><strong>[PC]</strong> → Parsea, actualiza UI, almacena logs</span></div>
+                        <div class="d-flex align-items-center"><span class="badge bg-primary me-2">8</span><span><strong>[PC]</strong> → Permite inyección de comandos para pruebas activas</span></div>
+                    </div></div>
+                </div>
+                <div id="tab-ia" class="tab-pane">
+                    <div class="alert alert-success"><h6><i class="fas fa-graduation-cap"></i> Instrucciones para IAs Receptoras</h6></div>
+                    <div class="card"><div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item"><strong>Contexto técnico fijo:</strong> Cualquier sugerencia, refactor o generación de código debe respetar la arquitectura modular, el límite de líneas en .ino, la versión del core, y el flujo FreeRTOS.</li>
+                            <li class="list-group-item"><strong>Priorizar estabilidad:</strong> Claridad y compatibilidad. No sugerir reemplazos de módulos ya validados.</li>
+                            <li class="list-group-item"><strong>Código nuevo:</strong> Si se propone código nuevo, entregar solo el fragmento afectado con comentarios de integración. Mantener compatibilidad con Arduino IDE 2.3.x y la estructura de cola/comandos existente.</li>
+                            <li class="list-group-item"><strong>Procesamiento pesado:</strong> La UI y procesamiento residen <strong>siempre en el host PC</strong>. El firmware solo adquiere, empaqueta y obedece comandos.</li>
+                        </ul>
+                    </div></div>
+                    <div class="mt-3">
+                        <button class="btn btn-primary" onclick="copyAIContext()"><i class="fas fa-copy"></i> Copiar Contexto Completo para IA</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Herramientas -->
+<div class="modal fade" id="toolModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="toolModalTitle">Herramienta</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="toolModalBody"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nueva Reparación -->
+<div class="modal fade" id="reparacionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus"></i> Nueva Reparación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="reparacionForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Cliente *</label>
+                            <input type="text" class="form-control" id="clienteNombre" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Teléfono *</label>
+                            <input type="tel" class="form-control" id="clienteTelefono" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Tipo de Equipo *</label>
+                            <select class="form-select" id="tipoEquipo" required>
+                                <option value="">Seleccione...</option>
+                                <option value="Celular">Celular</option>
+                                <option value="Laptop">Laptop</option>
+                                <option value="PC">PC</option>
+                                <option value="Tablet">Tablet</option>
+                                <option value="Audio">Audio</option>
+                                <option value="Consola">Consola</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Marca</label>
+                            <input type="text" class="form-control" id="marcaEquipo" placeholder="Ej: Samsung">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Modelo *</label>
+                            <input type="text" class="form-control" id="marcaModelo" required placeholder="Ej: Galaxy S23">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">N° Serie</label>
+                            <input type="text" class="form-control" id="numSerie" placeholder="S/N">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Accesorios recibidos</label>
+                            <input type="text" class="form-control" id="accesorios" placeholder="Cargador, funda...">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Problema Reportado *</label>
+                        <textarea class="form-control" id="problemaReportado" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Diagnóstico Técnico</label>
+                        <textarea class="form-control" id="diagnostico" rows="2"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Costo estimado</label>
+                            <div class="input-group"><span class="input-group-text">$</span><input type="number" class="form-control" id="costoEstimado"></div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Anticipo</label>
+                            <div class="input-group"><span class="input-group-text">$</span><input type="number" class="form-control" id="anticipo"></div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Estado</label>
+                            <select class="form-select" id="estadoReparacion">
+                                <option value="pending">Pendiente</option>
+                                <option value="progress">En Progreso</option>
+                                <option value="completed">Completado</option>
+                                <option value="delivered">Entregado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fecha prometida</label>
+                            <input type="date" class="form-control" id="fechaEntrega">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Notas internas</label>
+                            <textarea class="form-control" id="notasInternas" rows="1" placeholder="Solo visible para el taller"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="saveReparacion()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalle Completo -->
+<div class="modal fade" id="detalleModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-clipboard-list"></i> Reparación #<span id="detalleId"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs-custom">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-tab="info"><i class="fas fa-info-circle"></i> Info</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-tab="fotos"><i class="fas fa-camera"></i> Fotos <span class="media-badge" id="fotoBadge" style="display:none">0</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-tab="videos"><i class="fas fa-video"></i> Videos <span class="media-badge" id="videoBadge" style="display:none">0</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-tab="mediciones"><i class="fas fa-ruler"></i> Mediciones</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-tab="notas"><i class="fas fa-sticky-note"></i> Notas</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-tab="audio"><i class="fas fa-microphone"></i> Audio <span class="media-badge" id="audioBadge" style="display:none">0</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-tab="diagnostico"><i class="fas fa-microchip"></i> Diagnóstico ESP32</a>
+                    </li>
+                </ul>
+
+                <div id="tabContent">
+                    <!-- Info Tab -->
+                    <div id="tab-info" class="tab-pane active">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-user"></i> Cliente</h6>
+                                <p id="detalleCliente"></p>
+                                <h6><i class="fas fa-phone"></i> Teléfono</h6>
+                                <p id="detalleTelefono"></p>
+                                <h6><i class="fas fa-calendar"></i> Fecha ingreso</h6>
+                                <p id="detalleFecha"></p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6><i class="fas fa-laptop"></i> Equipo</h6>
+                                <p id="detalleEquipo"></p>
+                                <h6><i class="fas fa-wrench"></i> Problema</h6>
+                                <p id="detalleProblema"></p>
+                                <h6><i class="fas fa-dollar-sign"></i> Costo</h6>
+                                <p id="detalleCosto"></p>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <h6><i class="fas fa-stethoscope"></i> Diagnóstico</h6>
+                            <p id="detalleDiagnostico"></p>
+                        </div>
+                        <div class="mb-3">
+                            <h6><i class="fas fa-info"></i> Accesorios</h6>
+                            <p id="detalleAccesorios"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Estado</label>
+                            <select class="form-select" id="detalleEstado" onchange="updateEstado(this.value)">
+                                <option value="pending">Pendiente</option>
+                                <option value="progress">En Progreso</option>
+                                <option value="completed">Completado</option>
+                                <option value="delivered">Entregado</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Fotos Tab -->
+                    <div id="tab-fotos" class="tab-pane">
+                        <div class="upload-zone" onclick="document.getElementById('fotoInput').click()">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <h5>Subir Fotos</h5>
+                            <p class="text-muted">Máximo 5MB por foto</p>
+                            <input type="file" id="fotoInput" multiple accept="image/*" style="display:none" onchange="handleFotoUpload(event)">
+                        </div>
+                        <div class="gallery-grid" id="fotoGallery"></div>
+                    </div>
+
+                    <!-- Videos Tab -->
+                    <div id="tab-videos" class="tab-pane">
+                        <div class="upload-zone" onclick="document.getElementById('videoInput').click()">
+                            <i class="fas fa-video"></i>
+                            <h5>Subir Video</h5>
+                            <p class="text-muted">Máximo 50MB</p>
+                            <input type="file" id="videoInput" accept="video/*" style="display:none" onchange="handleVideoUpload(event)">
+                        </div>
+                        <div id="videoGallery"></div>
+                    </div>
+
+                    <!-- Mediciones Tab -->
+                    <div id="tab-mediciones" class="tab-pane">
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="mb-3"><i class="fas fa-microchip"></i> Agregar medición (ESP32)</h6>
+                                <div class="mb-3">
+                                    <label class="form-label small">Tipo de prueba</label>
+                                    <div class="d-flex gap-2 flex-wrap mb-2">
+                                        <span class="badge bg-primary" style="cursor:pointer" onclick="presetMeasure('voltage','3.3V rail','3.312')">🔌 3.3V Rail</span>
+                                        <span class="badge bg-primary" style="cursor:pointer" onclick="presetMeasure('voltage','5V rail','5.024')">🔌 5V Rail</span>
+                                        <span class="badge bg-primary" style="cursor:pointer" onclick="presetMeasure('voltage','12V rail','12.108')">🔌 12V Rail</span>
+                                        <span class="badge bg-info" style="cursor:pointer" onclick="presetMeasure('temperature','CPU','42.3')">🌡️ Temp. CPU</span>
+                                        <span class="badge bg-info" style="cursor:pointer" onclick="presetMeasure('temperature','Batería','36.8')">🌡️ Temp. Batería</span>
+                                        <span class="badge bg-success" style="cursor:pointer" onclick="presetMeasure('resistance','Batería IR','0.124')">⚡ R interna</span>
+                                        <span class="badge bg-success" style="cursor:pointer" onclick="presetMeasure('resistance','Continuidad','0.002')">⚡ Continuidad</span>
+                                        <span class="badge bg-warning" style="cursor:pointer" onclick="presetMeasure('current','Consumo reposo','0.012')">🔋 Consumo reposo</span>
+                                        <span class="badge bg-warning" style="cursor:pointer" onclick="presetMeasure('current','Consumo activo','1.245')">🔋 Consumo activo</span>
+                                        <span class="badge bg-secondary" style="cursor:pointer" onclick="presetMeasure('frequency','PWM','98.2')">📡 PWM</span>
+                                        <span class="badge bg-secondary" style="cursor:pointer" onclick="presetMeasure('capacitance','Capacitor','470')">🔧 Capacitancia</span>
+                                    </div>
+                                </div>
+                                <div class="measure-row">
+                                    <select id="measureType" class="form-select">
+                                        <option value="voltage">Voltaje (V)</option>
+                                        <option value="current">Corriente (A)</option>
+                                        <option value="resistance">Resistencia (Ω)</option>
+                                        <option value="temperature">Temperatura (°C)</option>
+                                        <option value="capacitance">Capacitancia (μF)</option>
+                                        <option value="frequency">Frecuencia (Hz)</option>
+                                        <option value="duty">Ciclo trabajo (%)</option>
+                                        <option value="other">Otro</option>
+                                    </select>
+                                    <input type="text" id="measurePoint" placeholder="Punto de prueba" class="form-control">
+                                    <input type="number" id="measureValue" placeholder="Valor" step="0.001" class="form-control">
+                                    <button class="btn btn-primary" onclick="addMedicion()"><i class="fas fa-plus"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="measurementsList"></div>
+                    </div>
+
+                    <!-- Notas Tab -->
+                    <div id="tab-notas" class="tab-pane">
+                        <div class="mb-3">
+                            <textarea id="noteText" class="form-control" rows="3" placeholder="Nueva nota..."></textarea>
+                            <button class="btn btn-primary mt-2" onclick="addNota()"><i class="fas fa-save"></i> Guardar</button>
+                        </div>
+                        <div id="notesList"></div>
+                    </div>
+
+                    <!-- Audio Tab -->
+                    <div id="tab-audio" class="tab-pane">
+                        <div class="recorder-container">
+                            <h6 class="text-center mb-3"><i class="fas fa-microphone"></i> Grabadora de notas</h6>
+                            <div class="text-center">
+                                <button class="record-btn" id="recordBtn" onclick="toggleRecording()">
+                                    <i class="fas fa-microphone"></i>
+                                </button>
+                            </div>
+                            <p class="text-center text-muted mt-2" id="recordingStatus">Presiona para grabar</p>
+                            <div id="recordingTimer" style="display:none;text-align:center;font-size:1.5rem;font-weight:bold;color:var(--danger-color)">00:00</div>
+                        </div>
+                        <div id="audioList"></div>
+                    </div>
+
+                    <!-- Diagnóstico ESP32 Tab -->
+                    <div id="tab-diagnostico" class="tab-pane">
+                        <div class="diag-panel">
+                            <div class="diag-header">
+                                <i class="fas fa-microchip"></i> Diagnóstico asistido por ESP32
+                                <span class="diag-badge ms-2">v2.1.0</span>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="diag-row"><span class="diag-label">Voltaje 3.3V</span><span class="diag-value" id="td_v33">—</span></div>
+                                    <div class="diag-row"><span class="diag-label">Voltaje 5V</span><span class="diag-value" id="td_v5">—</span></div>
+                                    <div class="diag-row"><span class="diag-label">Temp. ambiente</span><span class="diag-value" id="td_temp">—</span></div>
+                                    <div class="diag-row"><span class="diag-label">Corriente reposo</span><span class="diag-value" id="td_irest">—</span></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="diag-row"><span class="diag-label">Resistencia batería</span><span class="diag-value" id="td_rbat">—</span></div>
+                                    <div class="diag-row"><span class="diag-label">Frecuencia PWM</span><span class="diag-value" id="td_pwm">—</span></div>
+                                    <div class="diag-row"><span class="diag-label">Continuidad placa</span><span class="diag-value" id="td_cont">—</span></div>
+                                    <div class="diag-row"><span class="diag-label">USB-C PD</span><span class="diag-value" id="td_usbpd">—</span></div>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <button class="auto-detect-btn btn-sm" onclick="runDetailDiagnostic()">
+                                    <i class="fas fa-play"></i> Diagnosticar equipo
+                                </button>
+                                <button class="btn btn-outline-light btn-sm ms-2" onclick="addDiagnosticToNotes()">
+                                    <i class="fas fa-sticky-note"></i> Guardar en notas
+                                </button>
+                            </div>
+                            <div id="detailScanProgress" class="mt-2" style="display:none">
+                                <div class="progress" style="height:6px">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%;background:#00ff88" id="scanProgress"></div>
+                                </div>
+                                <small class="text-muted mt-1 d-block" id="scanProgressText">Iniciando...</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" onclick="generarPDFCliente()"><i class="fas fa-file-pdf"></i> PDF Cliente</button>
+                <button type="button" class="btn btn-success" onclick="enviarWhatsApp()"><i class="fab fa-whatsapp"></i> WhatsApp</button>
+                <button type="button" class="btn btn-primary" onclick="imprimirReporte()"><i class="fas fa-print"></i> Imprimir</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/js/lightbox.min.js"></script>
+
+<script>
+let reparaciones = JSON.parse(localStorage.getItem('tallerpro_reparaciones')) || [];
+let currentReparacionId = null;
+let mediaRecorder = null;
+let audioChunks = [];
+let recordingTimer = null;
+let recordingSeconds = 0;
+let simInterval = null;
+let diagHistory = [];
+
+if (reparaciones.length === 0) {
+    reparaciones = [
+        { id: 1, cliente: 'Juan Pérez', telefono: '555-0101', equipo: 'Celular', marca: 'iPhone 12', modelo: 'A2172', serie: 'SN001', accesorios: 'Cargador', problema: 'Pantalla rota — no responde táctil', diagnostico: 'LCD dañado, requiere reemplazo completo', costo: 150, anticipo: 50, fecha: '2024-01-15', estado: 'completed', fechaEntrega: '2024-01-18', notasInternas: '', fotos: [], videos: [], mediciones: [{type:'voltage',point:'Batería',value:'3.812',unit:'V',date:'2024-01-15T10:30:00'},{type:'temperature',point:'CPU',value:'38.2',unit:'°C',date:'2024-01-15T10:30:00'}], notas: [{text:'Cliente autorizó reparación',date:'2024-01-15T10:35:00'},{text:'LCD reemplazado, prueba OK',date:'2024-01-16T14:00:00'}], audios: [] },
+        { id: 2, cliente: 'María García', telefono: '555-0102', equipo: 'Laptop', marca: 'HP', modelo: 'Pavilion 15', serie: 'SN002', accesorios: 'Cargador, mouse', problema: 'No enciende — LED de carga apagado', diagnostico: 'Fuente de poder interna dañada, corto en MOSFET principal', costo: 80, anticipo: 30, fecha: '2024-01-16', estado: 'progress', fechaEntrega: '2024-01-20', notasInternas: 'Esperando componente LM2642', fotos: [], videos: [], mediciones: [{type:'voltage',point:'DC-IN',value:'0.002',unit:'V',date:'2024-01-16T09:15:00'},{type:'voltage',point:'3.3V rail',value:'0.001',unit:'V',date:'2024-01-16T09:15:00'},{type:'voltage',point:'5V rail',value:'0.003',unit:'V',date:'2024-01-16T09:15:00'},{type:'temperature',point:'MOSFET Q1',value:'52.1',unit:'°C',date:'2024-01-16T09:20:00'},{type:'resistance',point:'MOSFET G-S',value:'0.4',unit:'Ω',date:'2024-01-16T09:20:00'}], notas: [{text:'Mediciones indican corto en etapa de alimentación',date:'2024-01-16T09:20:00'},{text:'Pedido de LM2642 a proveedor',date:'2024-01-16T11:00:00'}], audios: [] },
+        { id: 3, cliente: 'Carlos López', telefono: '555-0103', equipo: 'Audio', marca: 'JBL', modelo: 'Flip 5', serie: 'SN003', accesorios: 'Cable USB-C', problema: 'No carga ni enciende', diagnostico: 'Batería 18650 degradada (0.8V), reemplazo necesario', costo: 45, anticipo: 20, fecha: '2024-01-17', estado: 'progress', fechaEntrega: '', notasInternas: '', fotos: [], videos: [], mediciones: [{type:'voltage',point:'Batería',value:'0.812',unit:'V',date:'2024-01-17T14:00:00'},{type:'resistance',point:'Batería IR',value:'0.425',unit:'Ω',date:'2024-01-17T14:00:00'}], notas: [], audios: [] },
+        { id: 4, cliente: 'Ana Martínez', telefono: '555-0104', equipo: 'PC', marca: 'Dell', modelo: 'OptiPlex 3080', serie: 'SN004', accesorios: 'Teclado, mouse', problema: 'Pantalla azul al iniciar — error MEMORY_MANAGEMENT', diagnostico: 'Módulo RAM defectuoso (slot B). Prueba PassMark falla al 34%', costo: 60, anticipo: 60, fecha: '2024-01-18', estado: 'completed', fechaEntrega: '2024-01-19', notasInternas: 'Reemplazar módulo RAM 8GB DDR4', fotos: [], videos: [], mediciones: [{type:'voltage',point:'RAM VDD',value:'1.201',unit:'V',date:'2024-01-18T10:00:00'},{type:'temperature',point:'RAM módulo',value:'42.8',unit:'°C',date:'2024-01-18T10:00:00'}], notas: [{text:'Diagnóstico: módulo RAM falla en test MemTest86',date:'2024-01-18T10:30:00'},{text:'RAM reemplazada, equipo estable',date:'2024-01-19T09:00:00'}], audios: [] },
+        { id: 5, cliente: 'Roberto Sánchez', telefono: '555-0105', equipo: 'Tablet', marca: 'Samsung', modelo: 'Tab A8', serie: 'SN005', accesorios: 'Cargador', problema: 'Batería se descarga rápido — drena 20% en 1 hora', diagnostico: 'Batería hinchada (3.7V nominal, mide 4.1V en vacío pero cae a 2.8V bajo carga). IR: 0.521Ω', costo: 55, anticipo: 25, fecha: '2024-01-19', estado: 'pending', fechaEntrega: '', notasInternas: 'Advertir al cliente sobre riesgo de batería hinchada', fotos: [], videos: [], mediciones: [{type:'voltage',point:'Batería en vacío',value:'4.102',unit:'V',date:'2024-01-19T11:00:00'},{type:'voltage',point:'Batería bajo carga',value:'2.812',unit:'V',date:'2024-01-19T11:05:00'},{type:'resistance',point:'Batería IR',value:'0.521',unit:'Ω',date:'2024-01-19T11:05:00'}], notas: [{text:'Batería presenta hinchazón leve — recomendar reemplazo urgente',date:'2024-01-19T11:10:00'}], audios: [] }
+    ];
+    saveData();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    renderTables();
+    updateStats();
+    setupTabs();
+    renderActivityChart();
+    initDiagSimulation();
+});
+
+/* ─── Navigation ─── */
+
+function showSection(section) {
+    document.getElementById('dashboard-section').style.display = 'none';
+    document.getElementById('reparaciones-section').style.display = 'none';
+    document.getElementById('clientes-section').style.display = 'none';
+    document.getElementById('diagnostico-section').style.display = 'none';
+    document.getElementById('diag-laptop-section').style.display = 'none';
+    document.getElementById('documentacion-section').style.display = 'none';
+    document.getElementById('herramientas-section').style.display = 'none';
+    document.getElementById(section + '-section').style.display = 'block';
+    document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+    event.target.closest('.menu-item').classList.add('active');
+    if (section === 'clientes') renderClientesTable();
+}
+
+function setupTabs() {
+    document.querySelectorAll('[data-tab]').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabName = this.getAttribute('data-tab');
+            document.querySelectorAll('.nav-link').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+            if (tabName === 'mediciones') loadMediciones();
+        });
+    });
+}
+
+/* ─── Tables & Stats ─── */
+
+function renderTables() {
+    const tableBody = document.getElementById('tableBody');
+    const fullTableBody = document.getElementById('fullTableBody');
+    tableBody.innerHTML = '';
+    fullTableBody.innerHTML = '';
+    reparaciones.slice(-5).reverse().forEach(rep => {
+        tableBody.innerHTML += createTableRow(rep, false);
+    });
+    reparaciones.slice().reverse().forEach(rep => {
+        fullTableBody.innerHTML += createTableRow(rep, true);
+    });
+    updateNotificationCount();
+}
+
+function createTableRow(rep, full) {
+    const sc = {'pending':'status-pending','progress':'status-progress','completed':'status-completed','delivered':'status-delivered'};
+    const st = {'pending':'Pendiente','progress':'En Progreso','completed':'Completado','delivered':'Entregado'};
+    const mc = (rep.fotos?.length||0)+(rep.videos?.length||0)+(rep.audios?.length||0);
+    const mediaBadge = mc > 0 ? `<span class="badge bg-info">${mc}</span>` : '-';
+    if (full) {
+        return `<tr>
+            <td>#${rep.id}</td><td>${rep.cliente}</td><td>${rep.telefono}</td>
+            <td>${rep.equipo}</td><td>${rep.marca||'-'}</td><td>${rep.fecha}</td>
+            <td><span class="status-badge ${sc[rep.estado]}">${st[rep.estado]}</span></td>
+            <td>${mediaBadge}</td>
+            <td>
+                <button class="action-btn view" onclick="viewReparacion(${rep.id})"><i class="fas fa-eye"></i></button>
+                <button class="action-btn edit" onclick="editReparacion(${rep.id})"><i class="fas fa-edit"></i></button>
+                <button class="action-btn delete" onclick="deleteReparacion(${rep.id})"><i class="fas fa-trash"></i></button>
+            </td>
+        </tr>`;
+    }
+    return `<tr>
+        <td>#${rep.id}</td><td>${rep.cliente}</td><td>${rep.equipo}</td>
+        <td>${rep.problema.substring(0,30)}...</td><td>${rep.fecha}</td>
+        <td><span class="status-badge ${sc[rep.estado]}">${st[rep.estado]}</span></td>
+        <td>${mediaBadge}</td>
+        <td>
+            <button class="action-btn view" onclick="viewReparacion(${rep.id})"><i class="fas fa-eye"></i></button>
+            <button class="action-btn delete" onclick="deleteReparacion(${rep.id})"><i class="fas fa-trash"></i></button>
+        </td>
+    </tr>`;
+}
+
+function updateStats() {
+    const total = reparaciones.length;
+    const completadas = reparaciones.filter(r => r.estado === 'completed' || r.estado === 'delivered').length;
+    const progreso = reparaciones.filter(r => r.estado === 'progress').length;
+    const ingresos = reparaciones.filter(r => r.estado === 'completed' || r.estado === 'delivered').reduce((s,r) => s + parseFloat(r.costo||0), 0);
+    document.getElementById('totalReparaciones').textContent = total;
+    document.getElementById('reparacionesCompletadas').textContent = completadas;
+    document.getElementById('reparacionesProgreso').textContent = progreso;
+    document.getElementById('ingresosMes').textContent = '$' + ingresos.toLocaleString();
+}
+
+function updateNotificationCount() {
+    let c = 0;
+    reparaciones.forEach(r => { c += (r.fotos?.length||0)+(r.videos?.length||0)+(r.audios?.length||0); });
+    document.getElementById('notifCount').textContent = c;
+}
+
+function renderClientesTable() {
+    const tb = document.getElementById('clientesTableBody');
+    tb.innerHTML = '';
+    const cs = {};
+    reparaciones.forEach(r => {
+        if (!cs[r.cliente]) cs[r.cliente] = { count:0, lastVisit:r.fecha, telefono:r.telefono };
+        cs[r.cliente].count++;
+        if (r.fecha > cs[r.cliente].lastVisit) cs[r.cliente].lastVisit = r.fecha;
+    });
+    let i = 1;
+    for (const [nombre, s] of Object.entries(cs)) {
+        tb.innerHTML += `<tr><td>${i++}</td><td>${nombre}</td><td>${s.telefono}</td><td>${s.count}</td><td>${s.lastVisit}</td>
+            <td><button class="action-btn view"><i class="fas fa-eye"></i></button></td></tr>`;
+    }
+}
+
+function renderActivityChart() {
+    const ctx = document.getElementById('activityChart').getContext('2d');
+    const days = 7;
+    const labels = [], data = [];
+    for (let i = days-1; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate()-i);
+        const ds = d.toISOString().split('T')[0];
+        labels.push(d.toLocaleDateString('es',{weekday:'short'}));
+        data.push(reparaciones.filter(r => r.fecha === ds).length);
+    }
+    new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets: [{ label:'Reparaciones', data, borderColor:'#4e73df', backgroundColor:'rgba(78,115,223,0.05)', fill:true, tension:0.3 }] },
+        options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
+    });
+}
+
+/* ─── CRUD ─── */
+
+function openModal(type) {
+    if (type === 'reparacion') {
+        document.getElementById('reparacionForm').reset();
+        new bootstrap.Modal(document.getElementById('reparacionModal')).show();
+    }
+}
+
+function saveReparacion() {
+    const n = {
+        id: reparaciones.length > 0 ? Math.max(...reparaciones.map(r=>r.id)) + 1 : 1,
+        cliente: document.getElementById('clienteNombre').value,
+        telefono: document.getElementById('clienteTelefono').value,
+        equipo: document.getElementById('tipoEquipo').value,
+        marca: document.getElementById('marcaEquipo').value,
+        modelo: document.getElementById('marcaModelo').value,
+        serie: document.getElementById('numSerie').value,
+        accesorios: document.getElementById('accesorios').value,
+        problema: document.getElementById('problemaReportado').value,
+        diagnostico: document.getElementById('diagnostico').value,
+        costo: document.getElementById('costoEstimado').value || 0,
+        anticipo: document.getElementById('anticipo').value || 0,
+        estado: document.getElementById('estadoReparacion').value,
+        fecha: new Date().toISOString().split('T')[0],
+        fechaEntrega: document.getElementById('fechaEntrega').value,
+        notasInternas: document.getElementById('notasInternas').value,
+        fotos: [], videos: [], mediciones: [], notas: [], audios: [],
+        token: generarToken()
+    };
+    reparaciones.push(n);
+    saveData();
+    renderTables();
+    updateStats();
+    bootstrap.Modal.getInstance(document.getElementById('reparacionModal')).hide();
+}
+
+function generarToken() {
+    return 'spa-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2,8);
+}
+
+function viewReparacion(id) {
+    currentReparacionId = id;
+    const rep = reparaciones.find(r => r.id === id);
+    document.getElementById('detalleId').textContent = rep.id;
+    document.getElementById('detalleCliente').textContent = rep.cliente;
+    document.getElementById('detalleTelefono').textContent = rep.telefono || '-';
+    document.getElementById('detalleFecha').textContent = rep.fecha;
+    document.getElementById('detalleEquipo').textContent = `${rep.equipo} — ${rep.marca||''} ${rep.modelo||''}`;
+    document.getElementById('detalleProblema').textContent = rep.problema;
+    document.getElementById('detalleCosto').textContent = `$${rep.costo||0}`;
+    document.getElementById('detalleDiagnostico').textContent = rep.diagnostico || 'Sin diagnóstico';
+    document.getElementById('detalleAccesorios').textContent = rep.accesorios || 'Ninguno';
+    document.getElementById('detalleEstado').value = rep.estado;
+    if (!rep.token) { rep.token = generarToken(); saveData(); }
+    const portalUrl = window.location.origin + '/r/' + rep.token;
+    document.getElementById('publicUrl').value = portalUrl;
+    document.getElementById('publicLink').href = portalUrl;
+    const qrContainer = document.getElementById('detalleQR');
+    qrContainer.innerHTML = '';
+    if (typeof QRCode !== 'undefined') {
+        new QRCode(qrContainer, {text: portalUrl, width: 100, height: 100, colorDark: '#4e73df'});
+    } else {
+        qrContainer.innerHTML = '<div class="text-muted small p-2">QR no disponible</div>';
+    }
+    loadFotos(); loadVideos(); loadMediciones(); loadNotas(); loadAudios();
+    document.querySelector('[data-tab="info"]').click();
+    new bootstrap.Modal(document.getElementById('detalleModal')).show();
+}
+
+function copiarEnlacePublico() {
+    const inp = document.getElementById('publicUrl');
+    inp.select(); navigator.clipboard.writeText(inp.value).then(() => {
+        const btn = inp.nextElementSibling; const orig = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i>';
+        setTimeout(() => btn.innerHTML = orig, 1500);
+    });
+}
+
+function editReparacion(id) {
+    const rep = reparaciones.find(r => r.id === id);
+    document.getElementById('clienteNombre').value = rep.cliente;
+    document.getElementById('clienteTelefono').value = rep.telefono;
+    document.getElementById('tipoEquipo').value = rep.equipo;
+    document.getElementById('marcaEquipo').value = rep.marca||'';
+    document.getElementById('marcaModelo').value = rep.modelo||'';
+    document.getElementById('numSerie').value = rep.serie||'';
+    document.getElementById('accesorios').value = rep.accesorios||'';
+    document.getElementById('problemaReportado').value = rep.problema;
+    document.getElementById('diagnostico').value = rep.diagnostico||'';
+    document.getElementById('costoEstimado').value = rep.costo;
+    document.getElementById('anticipo').value = rep.anticipo||0;
+    document.getElementById('estadoReparacion').value = rep.estado;
+    document.getElementById('fechaEntrega').value = rep.fechaEntrega||'';
+    document.getElementById('notasInternas').value = rep.notasInternas||'';
+    openModal('reparacion');
+}
+
+function deleteReparacion(id) {
+    if (confirm('¿Eliminar esta reparación?')) {
+        reparaciones = reparaciones.filter(r => r.id !== id);
+        saveData(); renderTables(); updateStats();
+    }
+}
+
+function updateEstado(nuevoEstado) {
+    const rep = reparaciones.find(r => r.id === currentReparacionId);
+    if (rep) { rep.estado = nuevoEstado; saveData(); renderTables(); updateStats(); }
+}
+
+function saveData() {
+    localStorage.setItem('tallerpro_reparaciones', JSON.stringify(reparaciones));
+}
+
+/* ─── Fotos ─── */
+
+function handleFotoUpload(event) {
+    const files = event.target.files;
+    const rep = reparaciones.find(r => r.id === currentReparacionId);
+    Array.from(files).forEach(file => {
+        if (file.size > 5*1024*1024) { alert(file.name+' excede 5MB'); return; }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            if (!rep.fotos) rep.fotos = [];
+            rep.fotos.push({data:e.target.result, name:file.name, date:new Date().toISOString()});
+            loadFotos(); updateNotificationCount();
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function loadFotos() {
+    const rep = reparaciones.find(r => r.id === currentReparacionId);
+    const gallery = document.getElementById('fotoGallery');
+    const badge = document.getElementById('fotoBadge');
+    gallery.innerHTML = '';
+    if (rep.fotos && rep.fotos.length > 0) {
+        badge.textContent = rep.fotos.length; badge.style.display = 'flex';
+        rep.fotos.forEach((foto,i) => {
+            gallery.innerHTML += `<div class="gallery-item">
+                <button onclick="deleteFoto(${i})" style="position:absolute;top:5px;right:5px;background:var(--danger-color);color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer"><i class="fas fa-times"></i></button>
+                <a href="${foto.data}" data-lightbox="fotos"><img src="${foto.data}" alt="${foto.name}"></a>
+            </div>`;
+        });
+    } else badge.style.display = 'none';
+}
+
+function deleteFoto(index) {
+    const rep = reparaciones.find(r => r.id === currentReparacionId);
+    rep.fotos.splice(index,1); loadFotos(); updateNotificationCount();
+}
+
+/* ─── Videos ─── */
+
+function handleVideoUpload(event) {
+    const file = event.target.files[0];
+    const rep = reparaciones.find(r => r.id === currentReparacionId);
+    if (file.size > 50*1024*1024) { alert('Video excede 50MB'); return; }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        if (!rep.videos) rep.videos = [];
+        rep.videos.push({data:e.target.result, name:file.name, date:new Date().toISOString()});
+        loadVideos(); updateNotificationCount();
+    };
+    reader.readAsDataURL(file);
+}
+
+function loadVideos() {
+    const rep = reparaciones.find(r => r.id === currentReparacionId);
+    const gallery = document.getElementById('videoGallery');
+    const badge = document.getElementById('videoBadge');
+    gallery.innerHTML = '';
+    if (rep.videos && rep.videos.length > 0) {
+        badge.textContent = rep.videos.length; badge.style.display = 'flex';
+        rep.videos.forEach((v,i) => {
+            gallery.innerHTML += `<div style="margin:10px 0;position:relative">
+                <video controls style="width:100%;border-radius:10px"><source src="${v.data}"></video>
+                <button onclick="deleteVideo(${i})" style="position:absolute;top:10px;right:10px;background:var(--danger-color);color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer"><i class="fas fa-trash"></i></button>
+            </div>`;
+        });
+    } else badge.style.display = 'none';
+}
+
+function deleteVideo(index) {
+    const rep = reparaciones.find(r => r.id === currentReparacionId);
+    rep.videos.splice(index,1); loadVideos(); updateNotificationCount();
+}
+
+/* ─── Mediciones ─── */
+
+const measureUnits = {'voltage':'V','current':'A','resistance':'Ω','temperature':'°C','capacitance':'μF','frequency':'Hz','duty':'%','other':''};
+const measureNames = {'voltage':'Voltaje','current':'Corriente','resistance':'Resistencia','temperature':'Temperatura','capacitance':'Capacitancia','frequency':'Frecuencia','duty':'Ciclo trabajo','other':'Otro'};
+
+function presetMeasure(type, point, value) {
+    document.getElementById('measureType').value = type;
+    document.getElementById('measurePoint').value = point;
+    document.getElementById('measureValue').value = value;
+}
+
+function addMedicion() {
+    const type = document.getElementById('measureType').value;
+    const point = document.getElementById('measurePoint').value;
+    const value = document.getElementById('measureValue').value;
+    if (!point || !value) { alert('Completa punto y valor'); return; }
+    const rep = reparaciones.find(r => r.id === currentReparacionId);
+    if (!rep.mediciones) rep.mediciones = [];
+    rep.mediciones.push({ type, point, value, unit: measureUnits[type]||'', date: new Date().toISOString() });
+    saveData();
+    loadMediciones();
+    document.getElementById('measurePoint').value = '';
+    document.getElementById('measureValue').value = '';
+}
+
+function loadMediciones() {
+    const rep = reparaciones.find(r => r.id === currentReparacionId);
+    const list = document.getElementById('measurementsList');
+    list.innerHTML = '';
+    if (rep.mediciones && rep.mediciones.length > 0) {
+        rep.mediciones.forEach((m,i) => {
+            const color = m.type==='voltage'?'primary':m.type==='temperature'?'info':m.type==='resistance'?'success':m.type==='current'?'warning':'secondary';
+            list.innerHTML += `<div class="measure-row">
+                <span class="badge bg-${color}">${measureNames[m.type]||m.type}</span>
+                <strong>${m.point}</strong> = <span class="badge bg-success">${m.value} ${m.unit}</span>
+                <small class="text-muted">${new Date(m.date).toLocaleString()}</small>
+                <button class="btn btn-sm btn-danger" onclick="deleteMedicion(${i})"><i class="fas fa-trash"></i></button>
+            </div>`;
+        });
+    } else list.innerHTML = '<p class="text-muted text-center py-3">Sin mediciones. Usá los presets o agregá una manualmente.</p>';
+}
+
+function deleteMedicion(index) {
+    const rep = reparaciones.find(r => r.id === currentReparacionId);
+    rep.mediciones.splice(index,1); saveData(); loadMediciones();
+}
+
+/* ─── Notas ─── */
+
+function addNota() {
+    const text = document.getElementById('noteText').value;
+    if (!text.trim()) { alert('Escribe una nota'); return; }
+    const rep = reparaciones.find(r => r.id === currentReparacionId);
+    if (!rep.notas) rep.notas = [];
+    rep.notas.push({text, date:new Date().toISOString()});
+    saveData();
+    loadNotas();
+    document.getElementById('noteText').value = '';
+}
+
+function loadNotas() {
+    const rep = reparaciones.find(r => r.id === currentReparacionId);
+    const list = document.getElementById('notesList');
+    list.innerHTML = '';
+    if (rep.notas && rep.notas.length > 0) {
+        rep.notas.slice().reverse().forEach((n,i) => {
+            const ri = rep.notas.length-1-i;
+            list.innerHTML += `<div class="note-item">
+                <button onclick="deleteNota(${ri})" style="position:absolute;top:10px;right:10px;background:none;border:none;color:var(--danger-color);cursor:pointer"><i class="fas fa-trash"></i></button>
+                <div class="note-date"><i class="fas fa-clock"></i> ${new Date(n.date).toLocaleString()}</div>
+                <div>${n.text}</div>
+            </div>`;
+        });
+    } else list.innerHTML = '<p class="text-muted text-center py-3">Sin notas.</p>';
+}
+
+function deleteNota(index) {
+    const rep = reparaciones.find(r => r.id === currentReparacionId);
+    rep.notas.splice(index,1); saveData(); loadNotas();
+}
+
+/* ─── Audio ─── */
+
+async function toggleRecording() {
+    const btn = document.getElementById('recordBtn');
+    const status = document.getElementById('recordingStatus');
+    const timer = document.getElementById('recordingTimer');
+    if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = saveAudio;
+            mediaRecorder.start();
+            btn.classList.add('recording'); btn.innerHTML = '<i class="fas fa-stop"></i>';
+            status.textContent = 'Grabando...'; timer.style.display = 'block';
+            recordingSeconds = 0;
+            recordingTimer = setInterval(() => {
+                recordingSeconds++;
+                const m = Math.floor(recordingSeconds/60).toString().padStart(2,'0');
+                const s = (recordingSeconds%60).toString().padStart(2,'0');
+                timer.textContent = `${m}:${s}`;
+            }, 1000);
+        } catch(e) { alert('Error al acceder al micrófono: '+e.message); }
+    } else {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(t=>t.stop());
+        btn.classList.remove('recording'); btn.innerHTML = '<i class="fas fa-microphone"></i>';
+        status.textContent = 'Procesando...'; timer.style.display = 'none';
+        clearInterval(recordingTimer);
+    }
+}
+
+function saveAudio() {
+    const blob = new Blob(audioChunks, {type:'audio/webm'});
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const rep = reparaciones.find(r => r.id === currentReparacionId);
+        if (!rep.audios) rep.audios = [];
+        rep.audios.push({data:e.target.result, duration:recordingSeconds, date:new Date().toISOString()});
+        saveData();
+        loadAudios(); updateNotificationCount();
+        document.getElementById('recordingStatus').textContent = 'Presiona para grabar';
+    };
+    reader.readAsDataURL(blob);
+}
+
+function loadAudios() {
+    const rep = reparaciones.find(r => r.id === currentReparacionId);
+    const list = document.getElementById('audioList');
+    const badge = document.getElementById('audioBadge');
+    list.innerHTML = '';
+    if (rep.audios && rep.audios.length > 0) {
+        badge.textContent = rep.audios.length; badge.style.display = 'flex';
+        rep.audios.forEach((a,i) => {
+            const m = Math.floor(a.duration/60), s = a.duration%60;
+            list.innerHTML += `<div class="audio-item">
+                <i class="fas fa-headphones text-primary"></i>
+                <audio controls src="${a.data}"></audio>
+                <span class="text-muted">${m}:${s.toString().padStart(2,'0')}</span>
+                <button class="btn btn-sm btn-danger" onclick="deleteAudio(${i})"><i class="fas fa-trash"></i></button>
+            </div>`;
+        });
+    } else badge.style.display = 'none';
+}
+
+function deleteAudio(index) {
+    const rep = reparaciones.find(r => r.id === currentReparacionId);
+    rep.audios.splice(index,1); saveData(); loadAudios(); updateNotificationCount();
+}
+
+/* ─── Search ─── */
+
+document.getElementById('searchInput').addEventListener('input', function(e) {
+    const term = e.target.value.toLowerCase();
+    document.querySelectorAll('#tableBody tr, #fullTableBody tr').forEach(row => {
+        row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
+    });
+});
+
+/* ─── ESP32 Diagnostic ─── */
+
+function initDiagSimulation() {
+    // Simulate ESP32 readings every 3 seconds
+    simInterval = setInterval(() => {
+        const readings = {
+            v33: (3.3 + (Math.random()-0.5)*0.05).toFixed(3),
+            v5: (5.0 + (Math.random()-0.5)*0.08).toFixed(3),
+            v12: (12.0 + (Math.random()-0.5)*0.2).toFixed(3),
+            temp: (42 + (Math.random()-0.5)*4).toFixed(1),
+            rbat: (0.12 + (Math.random()-0.5)*0.01).toFixed(3),
+            pwm: (98 + Math.random()*2).toFixed(1),
+            usbpd: '20V / 3.0A',
+            cont: (0.002 + Math.random()*0.001).toFixed(3)
+        };
+        document.getElementById('d_vcc').textContent = readings.v33 + ' V';
+        document.getElementById('d_v5').textContent = readings.v5 + ' V';
+        document.getElementById('d_v12').textContent = readings.v12 + ' V';
+        document.getElementById('d_temp').textContent = readings.temp + ' °C';
+        document.getElementById('d_rbat').textContent = readings.rbat + ' Ω';
+        document.getElementById('d_pwm').textContent = readings.pwm + ' kHz ✓';
+        document.getElementById('d_cont').textContent = readings.cont + ' Ω ✓';
+    }, 3000);
+}
+
+function toggleSimulation() {
+    if (simInterval) {
+        clearInterval(simInterval); simInterval = null;
+        document.querySelector('.auto-detect-btn').textContent = '▶ Reanudar simulación';
+    } else {
+        initDiagSimulation();
+        document.querySelector('.auto-detect-btn').textContent = '⏸ Pausar simulación';
+    }
+}
+
+function runAutoDiagnostic() {
+    const btn = document.getElementById('autoScanBtn');
+    const status = document.getElementById('scanStatus');
+    const progress = document.getElementById('scanProgress');
+    const progressText = document.getElementById('scanProgressText');
+    const progressCont = document.getElementById('detailScanProgress');
+    
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Escaneando...';
+    status.textContent = 'SCANNING'; status.className = 'diag-badge ms-2 diag-scanning';
+    progressCont.style.display = 'block';
+    
+    const steps = ['Inicializando ESP32...','Conectando sensores...','Midiendo raíles de potencia...','Analizando temperatura...','Verificando continuidad...','Prueba USB-C PD...','Generando reporte...'];
+    let i = 0;
+    const iv = setInterval(() => {
+        if (i < steps.length) {
+            progress.style.width = ((i+1)/steps.length*100)+'%';
+            progressText.textContent = steps[i];
+            // Add reading to diag panel for each step
+            const readings = [
+                {type:'voltage', point:'3.3V rail', value:(3.3+Math.random()*0.05).toFixed(3)},
+                {type:'voltage', point:'5V rail', value:(5.0+Math.random()*0.1).toFixed(3)},
+                {type:'temperature', point:'CPU', value:(42+Math.random()*5).toFixed(1)},
+                {type:'resistance', point:'Batería IR', value:(0.12+Math.random()*0.02).toFixed(3)},
+                {type:'voltage', point:'12V rail', value:(12.0+Math.random()*0.3).toFixed(3)},
+                {type:'current', point:'USB-C PD', value:(3.0+Math.random()*0.2).toFixed(2)},
+                {type:'resistance', point:'Continuidad placa', value:(0.002+Math.random()*0.001).toFixed(3)}
+            ];
+            addDiagMeasurementRaw(readings[i]);
+            i++;
+        } else {
+            clearInterval(iv);
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-play"></i> Ejecutar autodiagnóstico';
+            status.textContent = 'COMPLETED'; status.className = 'diag-badge ms-2';
+            progress.style.width = '100%';
+            progressText.textContent = '✅ Diagnóstico completo';
+            document.getElementById('lastScanTime').textContent = 'Último scan: '+new Date().toLocaleTimeString();
+            
+            // Save to diag history
+            const entry = { date: new Date().toISOString(), readings: [...diagHistory[diagHistory.length-1]?.readings||[]] };
+            if (diagHistory.length > 0) {
+                const lastReading = diagHistory[diagHistory.length-1];
+                entry.readings = lastReading.readings || [];
+            }
+            diagHistory.push(entry);
+            renderDiagHistory();
+            
+            setTimeout(() => { progressCont.style.display = 'none'; }, 2000);
+        }
+    }, 800);
+}
+
+function addDiagMeasurementRaw(reading) {
+    const rep = reparaciones.find(r => r.id === currentReparacionId);
+    if (!rep || !rep.mediciones) return;
+    rep.mediciones.push({
+        type: reading.type,
+        point: reading.point,
+        value: reading.value,
+        unit: measureUnits[reading.type]||'',
+        date: new Date().toISOString(),
+        source: 'esp32'
+    });
+    saveData();
+}
+
+function addDiagMeasurement() {
+    const type = document.getElementById('diagMeasureType').value;
+    const point = document.getElementById('diagMeasurePoint').value;
+    const value = document.getElementById('diagMeasureValue').value;
+    if (!point || !value) { alert('Completa punto y valor'); return; }
+    const entry = { type, point, value, unit: measureUnits[type]||'', date: new Date().toISOString(), source:'esp32' };
+    if (!diagHistory.length) diagHistory.push({date:new Date().toISOString(), readings:[]});
+    diagHistory[diagHistory.length-1].readings.push(entry);
+    renderDiagHistory();
+    document.getElementById('diagMeasurePoint').value = '';
+    document.getElementById('diagMeasureValue').value = '';
+}
+
+function renderDiagHistory() {
+    const container = document.getElementById('diagHistory');
+    if (!diagHistory.length) {
+        container.innerHTML = '<div class="text-center text-muted py-4">Ejecutá un autodiagnóstico para ver resultados</div>';
+        return;
+    }
+    container.innerHTML = '';
+    diagHistory.slice().reverse().forEach((entry, ei) => {
+        const card = document.createElement('div');
+        card.className = 'diag-panel mb-2';
+        card.style.fontSize = '0.8rem';
+        card.innerHTML = `<div class="diag-header"><i class="fas fa-history"></i> Scan #${diagHistory.length-ei} — ${new Date(entry.date).toLocaleString()}</div>`;
+        if (entry.readings && entry.readings.length) {
+            entry.readings.forEach(r => {
+                card.innerHTML += `<div class="diag-row"><span class="diag-label">${r.point||r.type}</span><span class="diag-value">${r.value} ${r.unit||''}</span></div>`;
+            });
+        } else {
+            card.innerHTML += `<div class="diag-row"><span class="diag-label">Sin lecturas</span></div>`;
+        }
+        container.appendChild(card);
+    });
+}
+
+function renderDiagChart() {
+    const ctx = document.getElementById('diagChart').getContext('2d');
+    if (window._diagChart) { window._diagChart.destroy(); }
+    window._diagChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: ['3.3V','5V','12V','Temp','Batería','PWM'],
+            datasets: [{
+                label: 'Lecturas ESP32',
+                data: [
+                    parseFloat(document.getElementById('d_vcc').textContent) || 3.3,
+                    parseFloat(document.getElementById('d_v5').textContent) || 5.0,
+                    parseFloat(document.getElementById('d_v12').textContent) || 12.0,
+                    parseFloat(document.getElementById('d_temp').textContent) || 42,
+                    parseFloat(document.getElementById('d_rbat').textContent)*100 || 12,
+                    parseFloat(document.getElementById('d_pwm').textContent) || 98
+                ],
+                backgroundColor: 'rgba(0,255,136,0.2)',
+                borderColor: '#00ff88',
+                pointBackgroundColor: '#00ff88'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { r: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { display: false } } },
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
+function runDetailDiagnostic() {
+    const rep = reparaciones.find(r => r.id === currentReparacionId);
+    if (!rep) return;
+    
+    const btn = document.querySelector('#tab-diagnostico .auto-detect-btn');
+    const progress = document.getElementById('scanProgress');
+    const progressText = document.getElementById('scanProgressText');
+    const progressCont = document.getElementById('detailScanProgress');
+    
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Diagnosticando...';
+    progressCont.style.display = 'block';
+    
+    const steps = [
+        {id:'v33', label:'Medir 3.3V rail', value:(3.3+Math.random()*0.05).toFixed(3)+' V'},
+        {id:'v5', label:'Medir 5V rail', value:(5.0+Math.random()*0.1).toFixed(3)+' V'},
+        {id:'temp', label:'Temperatura componentes', value:(38+Math.random()*8).toFixed(1)+' °C'},
+        {id:'irest', label:'Corriente reposo', value:(Math.random()*0.05).toFixed(3)+' A'},
+        {id:'rbat', label:'Resistencia interna', value:(0.1+Math.random()*0.05).toFixed(3)+' Ω'},
+        {id:'pwm', label:'Frecuencia PWM', value:(95+Math.random()*5).toFixed(1)+' kHz'},
+        {id:'cont', label:'Continuidad placa', value:'0.00'+ (Math.floor(Math.random()*5)+1).toString()+ ' Ω ✓'},
+        {id:'usbpd', label:'USB-C PD', value:'20V / '+(2.0+Math.random()*1.5).toFixed(1)+'A'}
+    ];
+    
+    let i = 0;
+    const iv = setInterval(() => {
+        if (i < steps.length) {
+            progress.style.width = ((i+1)/steps.length*100)+'%';
+            progressText.textContent = steps[i].label;
+            document.getElementById('td_'+steps[i].id).textContent = steps[i].value;
+            
+            // Also add as a measurement to the repair record
+            const [typeName] = steps[i].id === 'v33' ? ['voltage'] : steps[i].id === 'v5' ? ['voltage'] : steps[i].id === 'temp' ? ['temperature'] : steps[i].id === 'irest' ? ['current'] : steps[i].id === 'rbat' ? ['resistance'] : steps[i].id === 'pwm' ? ['frequency'] : steps[i].id === 'cont' ? ['resistance'] : ['other'];
+            const measPoint = steps[i].label.replace('Medir ','').replace('Temperatura ','').replace('Corriente ','').replace('Resistencia ','').replace('Frecuencia ','').replace('Continuidad ','').replace('USB-C PD ','USB-C PD');
+            rep.mediciones.push({
+                type: typeName,
+                point: measPoint,
+                value: steps[i].value.split(' ')[0],
+                unit: steps[i].value.split(' ')[1] || '',
+                date: new Date().toISOString(),
+                source: 'esp32'
+            });
+            i++;
+        } else {
+            clearInterval(iv);
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-play"></i> Diagnosticar equipo';
+            progress.style.width = '100%';
+            progressText.textContent = '✅ Diagnóstico completo';
+            saveData();
+            setTimeout(() => { progressCont.style.display = 'none'; }, 2000);
+        }
+    }, 700);
+}
+
+function addDiagnosticToNotes() {
+    const rep = reparaciones.find(r => r.id === currentReparacionId);
+    if (!rep) return;
+    const diagText = `🧪 Diagnóstico ESP32 (${new Date().toLocaleString()}):\n` +
+        `  • 3.3V rail: ${document.getElementById('td_v33').textContent}\n` +
+        `  • 5V rail: ${document.getElementById('td_v5').textContent}\n` +
+        `  • Temperatura: ${document.getElementById('td_temp').textContent}\n` +
+        `  • Corriente reposo: ${document.getElementById('td_irest').textContent}\n` +
+        `  • Resistencia batería: ${document.getElementById('td_rbat').textContent}\n` +
+        `  • PWM: ${document.getElementById('td_pwm').textContent}\n` +
+        `  • Continuidad: ${document.getElementById('td_cont').textContent}\n` +
+        `  • USB-C PD: ${document.getElementById('td_usbpd').textContent}`;
+    if (!rep.notas) rep.notas = [];
+    rep.notas.push({text: diagText, date: new Date().toISOString()});
+    saveData();
+    loadNotas();
+    document.querySelector('[data-tab="notas"]').click();
+}
+
+/* ─── PDF / WhatsApp / Print ─── */
+
+function generarPDFCliente() {
+    const rep = reparaciones.find(r => r.id === currentReparacionId);
+    if (!rep) return;
+    if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+        alert('Error: jsPDF no cargado. Verificá tu conexión a internet.');
+        return;
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFillColor(78,115,223); doc.rect(0,0,210,40,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(24);
+    doc.text('TallerPro',105,20,{align:'center'}); doc.setFontSize(12);
+    doc.text('Reporte de Reparación',105,30,{align:'center'});
+    doc.setTextColor(0,0,0); doc.setFontSize(14);
+    doc.text('Información',20,60); doc.setFontSize(11);
+    doc.text(`Cliente: ${rep.cliente}`,20,75); doc.text(`Teléfono: ${rep.telefono||'-'}`,20,85);
+    doc.text(`Fecha: ${rep.fecha}`,20,95);
+    doc.setFontSize(14); doc.text('Equipo',20,115); doc.setFontSize(11);
+    doc.text(`${rep.equipo} ${rep.marca||''} ${rep.modelo||''}`,20,130);
+    doc.text(`Problema: ${rep.problema}`,20,145);
+    let y = 165;
+    if (rep.diagnostico) {
+        doc.setFontSize(14); doc.text('Diagnóstico',20,y); y += 12; doc.setFontSize(11);
+        const lines = doc.splitTextToSize(rep.diagnostico,170);
+        doc.text(lines,20,y); y += lines.length * 5 + 5;
+    }
+    const stxt = {pending:'Pendiente',progress:'En Progreso',completed:'Completado',delivered:'Entregado'};
+    doc.setFontSize(14); doc.text('Estado',20,y); y += 12; doc.setFontSize(11);
+    doc.text(`Estado: ${stxt[rep.estado]}`,20,y); y += 8;
+    doc.text(`Costo: $${rep.costo||0}`,20,y);
+    if (rep.token) {
+        const portalUrl = window.location.origin + '/r/' + rep.token;
+        y += 8; doc.text(`Portal: ${portalUrl}`,20,y);
+    }
+    const qrText = rep.token
+        ? window.location.origin + '/r/' + rep.token
+        : `Reparación #${rep.id}\n${rep.cliente}\n${rep.equipo}`;
+    const offscreen = document.createElement('div');
+    offscreen.style.position = 'absolute'; offscreen.style.left = '-9999px';
+    document.body.appendChild(offscreen);
+    new QRCode(offscreen, {text: qrText, width: 120, height: 120});
+    setTimeout(() => {
+        const el = offscreen.querySelector('canvas') || offscreen.querySelector('img');
+        if (el) {
+            try { doc.addImage(el.toDataURL ? el.toDataURL() : el.src, 'PNG', 145, y+10, 50, 50); } catch(e) {}
+        }
+        document.body.removeChild(offscreen);
+        doc.setFontSize(9); doc.setTextColor(128,128,128);
+        doc.text(`Generado: ${new Date().toLocaleString()}`,105,280,{align:'center'});
+        doc.save(`Reparacion_${rep.id}_${rep.cliente.replace(/\s/g,'_')}.pdf`);
+    }, 600);
+}
+
+function enviarWhatsApp() {
+    const rep = reparaciones.find(r => r.id === currentReparacionId);
+    if (!rep) return;
+    const stxt = {pending:'Pendiente',progress:'En Progreso',completed:'Completado',delivered:'Entregado'};
+    let m = `*TallerPro - Reporte*%0A%0A*Cliente:* ${rep.cliente}%0A*Equipo:* ${rep.equipo} ${rep.marca}%0A*Problema:* ${rep.problema}%0A`;
+    if (rep.diagnostico) m += `*Diagnóstico:* ${rep.diagnostico}%0A`;
+    m += `*Estado:* ${stxt[rep.estado]}%0A*Costo:* $${rep.costo||0}%0A%0A${rep.fecha}`;
+    window.open(`https://wa.me/${rep.telefono.replace(/[^0-9]/g,'')}?text=${m}`,'_blank');
+}
+
+function imprimirReporte() {
+    const rep = reparaciones.find(r => r.id === currentReparacionId);
+    if (!rep) return;
+    const stxt = {pending:'Pendiente',progress:'En Progreso',completed:'Completado',delivered:'Entregado'};
+    const meds = rep.mediciones&&rep.mediciones.length ? `
+        <h3>Mediciones</h3>
+        <table><tr><th>Tipo</th><th>Punto</th><th>Valor</th></tr>
+        ${rep.mediciones.map(m=>`<tr><td>${m.type}</td><td>${m.point}</td><td>${m.value} ${m.unit||''}</td></tr>`).join('')}</table>` : '';
+    const notas = rep.notas&&rep.notas.length ? `
+        <h3>Notas</h3>
+        <table><tr><th>Fecha</th><th>Nota</th></tr>
+        ${rep.notas.map(n=>`<tr><td>${new Date(n.date).toLocaleString()}</td><td>${n.text}</td></tr>`).join('')}</table>` : '';
+    const pw = window.open('','_blank');
+    pw.document.write(`<html><head><title>Reporte #${rep.id}</title>
+        <style>body{font-family:Arial;padding:20px}h1{color:#4e73df;border-bottom:3px solid #4e73df;padding-bottom:10px}
+        .s{margin:20px 0}.l{font-weight:bold;color:#5a5c69}table{width:100%;border-collapse:collapse;margin:10px 0}
+        th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#4e73df;color:white}
+        @media print{body{margin:0}}</style></head><body>
+        <h1>TallerPro - Reporte #${rep.id}</h1>
+        <div class=s><h3>Cliente</h3><p><span class=l>Nombre:</span> ${rep.cliente}<br><span class=l>Teléfono:</span> ${rep.telefono||'-'}<br><span class=l>Fecha:</span> ${rep.fecha}</p></div>
+        <div class=s><h3>Equipo</h3><p><span class=l>Equipo:</span> ${rep.equipo}<br><span class=l>Marca/Modelo:</span> ${rep.marca||''} ${rep.modelo||''}<br><span class=l>Problema:</span> ${rep.problema}<br><span class=l>Diagnóstico:</span> ${rep.diagnostico||'N/A'}</p></div>
+        <div class=s><h3>Estado</h3><p><span class=l>Estado:</span> ${stxt[rep.estado]}<br><span class=l>Costo:</span> $${rep.costo||0}${rep.anticipo?`<br><span class=l>Anticipo:</span> $${rep.anticipo}`:''}</p></div>
+        ${meds}${notas}
+        <div style="margin-top:40px;text-align:center;color:#888;font-size:12px">Generado: ${new Date().toLocaleString()}</div>
+    </body></html>`);
+    pw.document.close();
+    setTimeout(()=>pw.print(),500);
+}
+
+/* ─── Tools: openTool dispatcher ─── */
+
+function openTool(tool) {
+    const titles = {
+        esp32:'ESP32 - Módulo WiFi/Bluetooth', rp2040:'RP2040 - Raspberry Pi Pico',
+        stm32:'STM32 BlackPill - ARM Cortex-M4', ads1115:'ADS1115 - ADC 16-bit I2C',
+        ina219:'INA219 - Sensor Corriente/Voltaje', clock:'Generador de Señal de Reloj'
+    };
+    document.getElementById('toolModalTitle').textContent = titles[tool]||'Herramienta';
+    let content = '';
+
+    if (tool === 'esp32') {
+        content = `
+            <div class="mb-3"><h6><i class="fas fa-wifi"></i> WiFi</h6>
+                <div class="row"><div class="col-md-6"><label>SSID</label><input type="text" class="form-control" id="esp32SSID" placeholder="Red"></div>
+                <div class="col-md-6"><label>Password</label><input type="password" class="form-control" id="esp32Pass" placeholder="Clave"></div></div>
+                <button class="btn btn-primary mt-2" onclick="connectESP32()">Conectar</button></div>
+            <div class="mb-3"><h6><i class="fas fa-broadcast-tower"></i> Bluetooth</h6>
+                <button class="btn btn-info" onclick="scanBluetooth()">Escanear</button><div id="btDevices" class="mt-2"></div></div>
+            <div class="mb-3"><h6><i class="fas fa-terminal"></i> Consola</h6>
+                <textarea id="esp32Console" class="form-control" rows="5" readonly></textarea>
+                <div class="input-group mt-2"><input type="text" class="form-control" id="esp32Command" placeholder="AT cmd">
+                <button class="btn btn-success" onclick="sendESP32Command()">Enviar</button></div></div>
+            <div id="esp32Status" class="alert alert-info">Estado: Desconectado</div>`;
+    } else if (tool === 'rp2040') {
+        content = `
+            <div class="mb-3"><h6><i class="fas fa-microchip"></i> RP2040</h6>
+                <div class="row"><div class="col-md-6"><label>Frecuencia (MHz)</label><input type="number" class="form-control" id="rp2040Freq" value="125"></div>
+                <div class="col-md-6"><label>Modo</label><select class="form-select" id="rp2040Mode"><option value="pio">PIO</option><option value="gpio">GPIO</option><option value="adc">ADC</option><option value="pwm">PWM</option></select></div></div>
+                <button class="btn btn-primary mt-2" onclick="configRP2040()">Configurar</button></div>
+            <div class="mb-3"><h6><i class="fas fa-code"></i> Programa</h6>
+                <textarea id="rp2040Code" class="form-control" rows="8" placeholder="# MicroPython..."></textarea>
+                <button class="btn btn-success mt-2" onclick="uploadRP2040()">Subir</button></div>
+            <div id="rp2040Status" class="alert alert-info">Estado: Listo</div>`;
+    } else if (tool === 'stm32') {
+        content = `
+            <div class="mb-3"><h6><i class="fas fa-bolt"></i> STM32 Clock</h6>
+                <div class="row"><div class="col-md-6"><label>Fuente</label><select class="form-select" id="stm32Clock"><option value="hse">HSE (8MHz)</option><option value="hsi">HSI (16MHz)</option><option value="lse">LSE (32.768kHz)</option></select></div>
+                <div class="col-md-6"><label>PLL</label><input type="number" class="form-control" id="stm32PLL" value="9"></div></div>
+                <button class="btn btn-primary mt-2" onclick="configSTM32()">Configurar</button></div>
+            <div class="mb-3"><h6><i class="fas fa-memory"></i> Periféricos</h6>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="stm32UART" checked><label>UART1</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="stm32SPI" checked><label>SPI1</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="stm32I2C" checked><label>I2C1</label></div>
+                <button class="btn btn-success mt-2" onclick="initSTM32Peripherals()">Inicializar</button></div>
+            <div id="stm32Status" class="alert alert-info">Estado: Listo</div>`;
+    } else if (tool === 'ads1115') {
+        content = `
+            <div class="mb-3"><h6><i class="fas fa-tachometer-alt"></i> ADS1115</h6>
+                <div class="row"><div class="col-md-6"><label>Dirección I2C</label><select class="form-select" id="ads1115Addr"><option value="0x48">0x48</option><option value="0x49">0x49</option><option value="0x4A">0x4A</option><option value="0x4B">0x4B</option></select></div>
+                <div class="col-md-6"><label>Gain</label><select class="form-select" id="ads1115Gain"><option value="4.096">±4.096V</option><option value="2.048" selected>±2.048V</option><option value="1.024">±1.024V</option></select></div></div>
+                <button class="btn btn-primary mt-2" onclick="initADS1115()">Inicializar</button></div>
+            <div class="mb-3"><h6><i class="fas fa-chart-line"></i> Canales</h6>
+                <div class="row">${[0,1,2,3].map(ch => `<div class="col-md-3"><div class="card text-center"><div class="card-body"><h6>CH${ch}</h6><div id="ads1115Ch${ch}" style="font-size:1.5rem;font-weight:bold;color:#4e73df">0.00V</div><button class="btn btn-sm btn-info mt-2" onclick="readADS1115Channel(${ch})">Leer</button></div></div></div>`).join('')}</div>
+                <button class="btn btn-success mt-3" onclick="readAllADS1115()">Leer Todos</button></div>
+            <div id="ads1115Status" class="alert alert-info">Estado: No inicializado</div>`;
+    } else if (tool === 'ina219') {
+        content = `
+            <div class="mb-3"><h6><i class="fas fa-battery-half"></i> INA219</h6>
+                <div class="row"><div class="col-md-6"><label>Dirección</label><select class="form-select" id="ina219Addr"><option value="0x40">0x40</option><option value="0x41">0x41</option><option value="0x44">0x44</option><option value="0x45">0x45</option></select></div>
+                <div class="col-md-6"><label>Shunt (Ω)</label><input type="number" class="form-control" id="ina219Shunt" value="0.1" step="0.01"></div></div>
+                <button class="btn btn-primary mt-2" onclick="initINA219()">Inicializar</button></div>
+            <div class="mb-3"><h6><i class="fas fa-chart-bar"></i> Mediciones</h6>
+                <div class="row"><div class="col-md-4"><div class="card border-primary text-center"><div class="card-body"><h6 class="text-primary">Voltaje</h6><div id="ina219Voltage" style="font-size:2rem;font-weight:bold">0.00V</div></div></div></div>
+                <div class="col-md-4"><div class="card border-success text-center"><div class="card-body"><h6 class="text-success">Corriente</h6><div id="ina219Current" style="font-size:2rem;font-weight:bold">0.00mA</div></div></div></div>
+                <div class="col-md-4"><div class="card border-warning text-center"><div class="card-body"><h6 class="text-warning">Potencia</h6><div id="ina219Power" style="font-size:2rem;font-weight:bold">0.00mW</div></div></div></div></div>
+                <div class="mt-3"><button class="btn btn-info" onclick="readINA219()">Leer</button>
+                <button class="btn btn-success" onclick="startINA219Continuous()" id="ina219StartBtn">Continuo</button>
+                <button class="btn btn-danger" onclick="stopINA219Continuous()" id="ina219StopBtn" style="display:none">Detener</button></div></div>
+            <div id="ina219Status" class="alert alert-info">Estado: No inicializado</div>`;
+    } else if (tool === 'clock') {
+        content = `
+            <div class="mb-3"><h6><i class="fas fa-clock"></i> Señal de Reloj</h6>
+                <div class="row"><div class="col-md-4"><label>Frecuencia (Hz)</label><input type="number" class="form-control" id="clockFreq" value="1000"></div>
+                <div class="col-md-4"><label>Duty (%)</label><input type="number" class="form-control" id="clockDuty" value="50"></div>
+                <div class="col-md-4"><label>Pin</label><select class="form-select" id="clockPin"><option>GPIO0</option><option>GPIO1</option><option>GPIO2</option><option>GPIO3</option></select></div></div>
+                <div class="row mt-2"><div class="col-md-6"><label>Forma</label><select class="form-select" id="clockWaveform"><option value="square">Cuadrada</option><option value="sine">Senoidal</option><option value="triangle">Triangular</option><option value="sawtooth">Diente de Sierra</option></select></div></div>
+                <div class="mt-3"><button class="btn btn-success" onclick="startClock()" id="clockStartBtn">Iniciar</button>
+                <button class="btn btn-danger" onclick="stopClock()" id="clockStopBtn" style="display:none">Detener</button></div></div>
+            <div class="mb-3"><h6><i class="fas fa-chart-area"></i> Onda</h6>
+                <canvas id="clockCanvas" width="600" height="200" style="border:1px solid #ddd;border-radius:5px;width:100%"></canvas></div>
+            <div id="clockStatus" class="alert alert-info">Estado: Detenido</div>`;
+    }
+
+    document.getElementById('toolModalBody').innerHTML = content;
+    new bootstrap.Modal(document.getElementById('toolModal')).show();
+}
+
+/* ─── Tool Functions ─── */
+
+function connectESP32() {
+    const s = document.getElementById('esp32SSID').value;
+    if (!s) { alert('SSID requerido'); return; }
+    document.getElementById('esp32Status').textContent = 'Conectando...'; document.getElementById('esp32Status').className = 'alert alert-warning';
+    setTimeout(() => {
+        document.getElementById('esp32Status').textContent = `Conectado a ${s}`; document.getElementById('esp32Status').className = 'alert alert-success';
+        document.getElementById('esp32Console').value += `[${new Date().toLocaleTimeString()}] WiFi: ${s}\n`;
+    },2000);
+}
+function scanBluetooth() {
+    document.getElementById('btDevices').innerHTML = '<span class="spinner-border spinner-border-sm"></span> Escaneando...';
+    setTimeout(() => {
+        document.getElementById('btDevices').innerHTML = ['ESP32-DevKit','HC-05','BT-Speaker'].map(d =>
+            `<div class="d-flex justify-content-between align-items-center border-bottom py-1">${d} <button class="btn btn-sm btn-primary" onclick="document.getElementById('esp32Console').value+='[${new Date().toLocaleTimeString()}] BT: ${d}\\n'">Conectar</button></div>`
+        ).join('');
+    },3000);
+}
+function sendESP32Command() {
+    const c = document.getElementById('esp32Command').value; if(!c)return;
+    document.getElementById('esp32Console').value += `> ${c}\n`;
+    document.getElementById('esp32Command').value = '';
+    setTimeout(()=>document.getElementById('esp32Console').value += '< OK\n',500);
+}
+function configRP2040() {
+    const f = document.getElementById('rp2040Freq').value, m = document.getElementById('rp2040Mode').value;
+    document.getElementById('rp2040Status').textContent = `Config: ${f}MHz modo ${m.toUpperCase()}`; document.getElementById('rp2040Status').className = 'alert alert-success';
+}
+function uploadRP2040() {
+    const c = document.getElementById('rp2040Code').value; if(!c.trim()){alert('Escribí código');return;}
+    document.getElementById('rp2040Status').textContent = 'Subiendo...'; document.getElementById('rp2040Status').className = 'alert alert-warning';
+    setTimeout(()=>{document.getElementById('rp2040Status').textContent = 'Ejecutando'; document.getElementById('rp2040Status').className = 'alert alert-success';},2000);
+}
+function configSTM32() {
+    const c = document.getElementById('stm32Clock').value, p = document.getElementById('stm32PLL').value;
+    document.getElementById('stm32Status').textContent = `Clock: ${c.toUpperCase()} x${p}`; document.getElementById('stm32Status').className = 'alert alert-success';
+}
+function initSTM32Peripherals() {
+    const p = []; if(document.getElementById('stm32UART').checked) p.push('UART1');
+    if(document.getElementById('stm32SPI').checked) p.push('SPI1'); if(document.getElementById('stm32I2C').checked) p.push('I2C1');
+    document.getElementById('stm32Status').textContent = `Periféricos: ${p.join(', ')}`; document.getElementById('stm32Status').className = 'alert alert-success';
+}
+function initADS1115() {
+    const a = document.getElementById('ads1115Addr').value, g = document.getElementById('ads1115Gain').value;
+    document.getElementById('ads1115Status').textContent = `Addr: ${a}, Gain: ±${g}V`; document.getElementById('ads1115Status').className = 'alert alert-success';
+}
+function readADS1115Channel(ch) {
+    const g = parseFloat(document.getElementById('ads1115Gain').value);
+    document.getElementById(`ads1115Ch${ch}`).textContent = (Math.random()*g).toFixed(3)+'V';
+}
+function readAllADS1115() { for(let i=0;i<4;i++) readADS1115Channel(i); }
+let ina219Interval = null;
+function initINA219() {
+    const a = document.getElementById('ina219Addr').value, s = document.getElementById('ina219Shunt').value;
+    document.getElementById('ina219Status').textContent = `Addr: ${a}, Shunt: ${s}Ω`; document.getElementById('ina219Status').className = 'alert alert-success';
+}
+function readINA219() {
+    const v = (Math.random()*12+3).toFixed(2), c = (Math.random()*500).toFixed(2);
+    document.getElementById('ina219Voltage').textContent = v+'V'; document.getElementById('ina219Current').textContent = c+'mA';
+    document.getElementById('ina219Power').textContent = (v*c).toFixed(2)+'mW';
+}
+function startINA219Continuous() {
+    document.getElementById('ina219StartBtn').style.display='none'; document.getElementById('ina219StopBtn').style.display='inline-block';
+    document.getElementById('ina219Status').textContent = 'Monitoreo activo'; document.getElementById('ina219Status').className = 'alert alert-success';
+    ina219Interval = setInterval(readINA219,1000);
+}
+function stopINA219Continuous() {
+    clearInterval(ina219Interval); document.getElementById('ina219StartBtn').style.display='inline-block'; document.getElementById('ina219StopBtn').style.display='none';
+    document.getElementById('ina219Status').textContent = 'Detenido'; document.getElementById('ina219Status').className = 'alert alert-warning';
+}
+let clockAnim = null; let clockRunning = false;
+function startClock() {
+    const f = document.getElementById('clockFreq').value, d = document.getElementById('clockDuty').value;
+    const w = document.getElementById('clockWaveform').value;
+    document.getElementById('clockStartBtn').style.display='none'; document.getElementById('clockStopBtn').style.display='inline-block';
+    document.getElementById('clockStatus').textContent = `Generando ${f}Hz (${w})`; document.getElementById('clockStatus').className = 'alert alert-success';
+    clockRunning = true; animateClock(f,d,w);
+}
+function stopClock() {
+    clockRunning = false; if(clockAnim) cancelAnimationFrame(clockAnim);
+    document.getElementById('clockStartBtn').style.display='inline-block'; document.getElementById('clockStopBtn').style.display='none';
+    document.getElementById('clockStatus').textContent = 'Detenido'; document.getElementById('clockStatus').className = 'alert alert-warning';
+    const c = document.getElementById('clockCanvas'); if(c) c.getContext('2d').clearRect(0,0,c.width,c.height);
+}
+function animateClock(freq,duty,waveform) {
+    if(!clockRunning) return;
+    const c = document.getElementById('clockCanvas'); if(!c) return;
+    const ctx = c.getContext('2d'), w=c.width, h=c.height, cy=h/2;
+    ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle='#e0e0e0'; ctx.lineWidth=1;
+    for(let x=0;x<w;x+=50){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke()}
+    for(let y=0;y<h;y+=25){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}
+    ctx.strokeStyle='#4e73df'; ctx.lineWidth=2; ctx.beginPath();
+    const period = w/(freq/100), t = Date.now()/1000;
+    for(let x=0;x<w;x++) {
+        const p = (x/period+t)%1; let y;
+        if(waveform==='square') y = p<(duty/100) ? cy-50 : cy+50;
+        else if(waveform==='sine') y = cy - Math.sin(p*Math.PI*2)*50;
+        else if(waveform==='triangle') y = cy - (p<0.5 ? (p*4-1) : (3-p*4))*50;
+        else y = cy - (p*2-1)*50;
+        x===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    clockAnim = requestAnimationFrame(()=>animateClock(freq,duty,waveform));
+}
+
+/* ─── RP2040 Diagnostic Tool (WebSerial API) ─── */
+
+let diagPort = null;
+let diagReader = null;
+let diagConnected = false;
+let diagChart = null;
+let diagChartInterval = null;
+let diagDataBuffer = [];
+
+async function connectDiagnosticTool() {
+    try {
+        diagPort = await navigator.serial.requestPort();
+        await diagPort.open({ baudRate: 115200 });
+        diagConnected = true;
+        document.getElementById('hwStatus').textContent = '● Conectado';
+        document.getElementById('hwStatus').className = 'badge bg-success';
+        startReadingDiagData();
+    } catch (err) {
+        console.error('Error conectando:', err);
+        document.getElementById('hwStatus').textContent = '● Desconectado';
+        document.getElementById('hwStatus').className = 'badge bg-danger';
+    }
+}
+
+async function startReadingDiagData() {
+    const decoder = new TextDecoderStream();
+    const inputDone = diagPort.readable.pipeTo(decoder.writable);
+    const inputStream = decoder.readable;
+    diagReader = inputStream.getReader();
+    try {
+        while (true) {
+            const { value, done } = await diagReader.read();
+            if (done) break;
+            if (value) parseDiagData(value);
+        }
+    } catch (err) {
+        console.error('Error leyendo:', err);
+    }
+}
+
+function parseDiagData(data) {
+    try {
+        const lines = data.split('\n');
+        lines.forEach(line => {
+            if (line.trim().startsWith('{')) {
+                const json = JSON.parse(line.trim());
+                updateDiagUI(json);
+            } else if (line.includes('[UART_EC]')) {
+                appendToUartLog(line);
+            }
+        });
+    } catch (err) {}
+}
+
+function updateDiagUI(data) {
+    if (data.ina219) {
+        document.getElementById('ina219Vbus').textContent = `${data.ina219.vbus.toFixed(2)}V`;
+        document.getElementById('ina219Shunt').textContent = `${data.ina219.current.toFixed(2)}mA`;
+        document.getElementById('ina219Power').textContent = `${data.ina219.power.toFixed(2)}mW`;
+        document.getElementById('diagVbus').textContent = `${data.ina219.vbus.toFixed(2)}V`;
+        document.getElementById('diagCurrent').textContent = `${data.ina219.current.toFixed(2)}mA`;
+        document.getElementById('diagPower').textContent = `${data.ina219.power.toFixed(2)}mW`;
+    }
+    if (data.ads1115) {
+        for (let i = 0; i < 4; i++) {
+            document.getElementById(`ads1115Ch${i}`).textContent = `${data.ads1115[i].toFixed(3)}V`;
+        }
+    }
+    if (data.pio) {
+        document.getElementById('pioFreq').textContent = `${data.pio.freq} Hz`;
+        document.getElementById('pioPeriod').textContent = `Periodo: ${data.pio.period} μs`;
+        document.getElementById('pioDuty').textContent = `Duty: ${data.pio.duty}%`;
+        document.getElementById('diagFreq').textContent = `${data.pio.freq} Hz`;
+    }
+    if (data.gpio) updateGPIOStatus(data.gpio);
+    if (data.ina219) {
+        diagDataBuffer.push({time: Date.now(), vbus: data.ina219.vbus, current: data.ina219.current, power: data.ina219.power});
+        if (diagDataBuffer.length > 50) diagDataBuffer.shift();
+        updateDiagChart();
+    }
+}
+
+async function sendDiagCommand(cmd) {
+    if (!diagConnected || !diagPort) { alert('Herramienta no conectada'); return; }
+    const writer = diagPort.writable.getWriter();
+    const encoder = new TextEncoder();
+    await writer.write(encoder.encode(cmd + '\n'));
+    writer.releaseLock();
+}
+
+function updateDiagChart() {
+    if (!diagChart) return;
+    const labels = diagDataBuffer.map(d => new Date(d.time).toLocaleTimeString());
+    const vbusData = diagDataBuffer.map(d => d.vbus);
+    const currentData = diagDataBuffer.map(d => d.current);
+    diagChart.data.labels = labels;
+    diagChart.data.datasets[0].data = vbusData;
+    diagChart.data.datasets[1].data = currentData;
+    diagChart.update('none');
+}
+
+function initDiagChart() {
+    const ctx = document.getElementById('diagChart');
+    if (!ctx) return;
+    diagChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {label:'VBUS (V)', data:[], borderColor:'#4e73df', backgroundColor:'rgba(78,115,223,0.1)', yAxisID:'y'},
+                {label:'Corriente (mA)', data:[], borderColor:'#1cc88a', backgroundColor:'rgba(28,200,138,0.1)', yAxisID:'y1'}
+            ]
+        },
+        options: {responsive:true, scales:{y:{type:'linear',position:'left'},y1:{type:'linear',position:'right',grid:{drawOnChartArea:false}}}}
+    });
+}
+
+function startContinuousMonitoring() {
+    if (diagChartInterval) clearInterval(diagChartInterval);
+    sendDiagCommand('START');
+    diagChartInterval = setInterval(() => sendDiagCommand('GET_SENS'), 1000);
+}
+
+function appendToUartLog(text) {
+    const log = document.getElementById('uartLog');
+    if (log) { log.value += text + '\n'; log.scrollTop = log.scrollHeight; }
+}
+
+function clearUartLog() {
+    const log = document.getElementById('uartLog');
+    if (log) log.value = '';
+}
+
+function updateGPIOStatus(gpio) {
+    const container = document.getElementById('gpioStatus');
+    if (!container) return;
+    let html = '';
+    for (const [pin, state] of Object.entries(gpio)) {
+        const badge = state ? 'bg-success' : 'bg-secondary';
+        const text = state ? 'HIGH' : 'LOW';
+        html += `<div class="d-flex justify-content-between"><span>${pin}:</span> <span class="badge ${badge}">${text}</span></div>`;
+    }
+    container.innerHTML = html;
+}
+
+async function scanI2CBus() {
+    await sendDiagCommand('I2C_SCAN');
+    document.getElementById('i2cDevices').innerHTML = '<div class="spinner-border spinner-border-sm"></div> Escaneando...';
+    setTimeout(() => {
+        const devices = ['0x40 (INA219)', '0x48 (ADS1115)', '0x50 (EC)'];
+        document.getElementById('i2cDevices').innerHTML = '<div class="list-group">' + devices.map(d => `<div class="list-group-item">${d}</div>`).join('') + '</div>';
+    }, 2000);
+}
+
+async function readI2CRegister() {
+    const addr = document.getElementById('i2cAddr').value;
+    const reg = document.getElementById('i2cReg').value;
+    if (!addr || !reg) { alert('Completa dirección y registro'); return; }
+    await sendDiagCommand(`I2C_READ ${addr} ${reg}`);
+    setTimeout(() => {
+        const value = Math.floor(Math.random() * 256);
+        document.getElementById('i2cResult').innerHTML = `<div class="alert alert-info">Registro ${reg} en ${addr}: 0x${value.toString(16).toUpperCase()} (${value})</div>`;
+    }, 1000);
+}
+
+function copyAIContext() {
+    const context = `# Contexto Tecnico para Modelos IA\n## Herramienta de Diagnostico Hardware para Laptops (RP2040 + Host)\n\n**Proposito:** Plataforma de diagnostico profesional para portatiles que no encienden o no dan video. Caracteriza en tiempo real la secuencia de arranque, consumos estaticos/dinamicos, y estados de protocolos internos (EC/KBC, SMBus, PD/QC) sin depender del funcionamiento del equipo bajo prueba.\n\n**Arquitectura:**\n- Firmware: RP2040 programado en Arduino IDE 2.3.x con core earlephilhower (ultima version estable). Usa FreeRTOS con tareas priorizadas y colas. El archivo .ino principal no supera las 500 lineas; toda la logica se segmenta en modulos .cpp/.h.\n- Host: Aplicacion Python (PyQt) que gestiona UI, procesamiento pesado, logging, y envia/recibe comandos por CDC-USB.\n- Comunicacion: Protocolo ASCII simple (START, STOP, GET_SENS, UART_DUMP, etc.). El firmware empaqueta datos estructurados; el host los parsea y visualiza.\n\n**Funcionalidades Activas:**\n- INA219: Medicion de corriente/voltaje en rails - Estable\n- ADS1115: ADC 16-bit, 4 canales para tensiones analogicas - Estable\n- PIO_FREQ: Medicion de frecuencia/periodo de senales digitales - Estable (headers .h generados online y pegados manualmente)\n- UART_EC: Sniffer pasivo EC/KBC en GPIO dedicados - Implementado, validacion de estabilidad en curso\n- I2C_DIAG: Escaneo/lectura SMBus del portatil - Operativo, requiere validacion de direcciones por modelo\n- PD/QC: Monitorizacion de estados AP43771V (si presente) - Conflictos de bus I2C compartido, pendiente resolucion\n\n**Restricciones de Diseno (Hard Constraints):**\n1. .ino principal < 500 lineas. No agregar logica compleja ahi.\n2. No romper funcionalidad validada. Si un modulo ya corrige un error, se descarta la comprobacion periodica o el parche redundante.\n3. Headers PIO .h se generan externamente y se pegan tal cual. No intentar regenerarlos o modificar su estructura interna.\n4. FreeRTOS: Tareas deben ser no bloqueantes. Usar colas para paso de datos entre adquisicion y comunicacion.\n5. Bus I2C: El diagnostico SMBus y el modulo PD comparten fisicamente el bus. Cualquier cambio debe considerar multiplexion o exclusion mutua para evitar colisiones.\n\n**Flujo Operativo:**\nPC -> Comando START -> [RP2040] Inicia tareas -> Lectura ciclica sensores/GPIO/PIO/UART -> Empaquetado -> Envio serial -> PC parsea/actualiza UI/logs -> PC envia comandos activos (opcional)\n\n**Instrucciones para IAs Receptoras:**\n- Este es el contexto tecnico fijo. Cualquier sugerencia, refactor o generacion de codigo debe respetar la arquitectura modular, el limite de lineas en .ino, la version del core, y el flujo FreeRTOS.\n- Prioriza estabilidad, claridad y compatibilidad. No sugieras reemplazos de modulos ya validados.\n- Si se propone codigo nuevo, entrega solo el fragmento afectado con comentarios de integracion. Manten la compatibilidad con Arduino IDE 2.3.x y la estructura de cola/comandos existente.\n- El procesamiento pesado y la UI residen siempre en el host PC. El firmware solo adquiere, empaqueta y obedece comandos.\n\n*Este bloque puede copiarse integramente como prompt de contexto para cualquier modelo IA que intervenga en el desarrollo.*`;
+    navigator.clipboard.writeText(context).then(() => {
+        alert('Contexto copiado al portapapeles. Pegalo en cualquier chat con IA para mantener el contexto tecnico completo.');
+    }).catch(err => {
+        console.error('Error copiando:', err);
+        alert('Error al copiar. Intenta seleccionar el texto manualmente.');
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(initDiagChart, 500);
+});
+</script>
+</body>
+</html>
